@@ -5,64 +5,30 @@
 #include <fstream>
 #include <algorithm>
 #include <string>
+#include <matrix/matrix.hpp>
 
 using namespace std;
 
-class Matrix 
-{
-    public:
-        void read_mtx_file(string filePath, vector<double>& val, vector<long int>& row, vector<long int>& col){
-            ifstream reader(filePath);
-            if(reader){
-                while(reader.peek() == '%'){
-                    reader.ignore(2048, '\n');
-                }
-                reader >> MNL[0] >> MNL[1] >> MNL[2];
-                for(int i = 0; i < MNL[2]; i++){
-                    long int r, c;
-                    double value;
-                    reader >> r >> c >> value;
-                    row.push_back(r-1);
-                    col.push_back(c-1);
-                    val.push_back(value);
-                }
-                reader.close();
-            }else{
-                cout << "impossible to open the file";
-            }
-
-            /* ifstream reader(filePath);
-            if(reader){
-                while(reader.peek() == '%'){
-                    reader.ignore(2048, '\n');
-                }
-                reader >> MNL[0] >> MNL[1] >> MNL[2];
-                int lastRow = 1;
-                ptr.push_back(1);
-                for(int i = 0; i < MNL[2]; i++){
-                    long int row, col;
-                    double value;
-                    reader >> row >> col >> value;
-                    ind.push_back(col);
-                    val.push_back(value);
-                    if(row > lastRow){
-                        lastRow = row;
-                        ptr.push_back(ind.size());
-                    }
-                }
-                ptr.push_back(ind.size() + 1);
-                reader.close();
-            }else{
-                cout << "impossible to open the file";
-            } */
-
+void Matrix::read_mtx_file(string filePath, vector<double>& val, vector<long int>& row, vector<long int>& col){
+    ifstream reader(filePath);
+    if(reader){
+        while(reader.peek() == '%'){
+            reader.ignore(2048, '\n');
         }
-        virtual void initialize(string path) = 0;
-        long int MNL[3];
-    private:
-        
-
-};
+        reader >> MNL[0] >> MNL[1] >> MNL[2];
+        for(int i = 0; i < MNL[2]; i++){
+            long int r, c;
+            double value;
+            reader >> r >> c >> value;
+            row.push_back(r-1);
+            col.push_back(c-1);
+            val.push_back(value);
+        }
+        reader.close();
+    }else{
+        cout << "impossible to open the file";
+    }
+}
 
 class COO : public Matrix
 {

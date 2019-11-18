@@ -1,0 +1,42 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/quentin/PFE/CppCode/cppmpi/matrix.cpp
+iostream
+-
+vector
+-
+stdio.h
+-
+cmath
+-
+fstream
+-
+algorithm
+-
+string
+-
+matrix/matrix.hpp
+-
+
+include/matrix/matrix.hpp
+iostream
+-
+vector
+-
+stdio.h
+-
+cmath
+-
+fstream
+-
+algorithm
+-
+string
+-
+
