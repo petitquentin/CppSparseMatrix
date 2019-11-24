@@ -21,4 +21,38 @@ class Matrix
     private:
 };
 
+class COO : public Matrix
+{
+    public:
+    void initialize(string path);
+
+    private:
+    vector<double> val;
+    vector<long int> row;
+    vector<long int> col;
+};
+
+class ELL : public Matrix // Ellpack format
+{
+public: 
+    void initialize(string path);
+    void print();
+private:
+    vector<vector<long int>> colInd;
+    vector<vector<double>> val;
+
+};
+
+class CSR : public Matrix
+{
+    public:
+    void initialize(string path);
+    void print();
+    
+private:
+    vector<double> val;
+    vector<long int> ind;
+    vector<long int> ptr;
+};
+
 #endif
