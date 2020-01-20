@@ -69,8 +69,8 @@ vector<double> spmv_mpi(COO matrix, vector<double> denseVector){
     }
     RowDouble result1(MNL1);
     if(MNL1 == denseVector.size()){
-        MPI_Reduce(&result, &result1, result.size(), MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-        //MPI_Allreduce(&result, &result1, result.size(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        //MPI_Reduce(&result, &result1, result.size(), MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        MPI_Allreduce(&result, &result1, result.size(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     }
     return result1;
 
