@@ -15,6 +15,7 @@ class Matrix
 {
     public:
         void read_mtx_file(string filePath, vector<double>& val, vector<long int>& row, vector<long int>& col);
+        long int getMNL(int num);
         virtual void initialize(string path) = 0;
         virtual void print() = 0;
     protected:
@@ -28,7 +29,11 @@ public:
     void initialize(string path);
     void print();
     vector<double> spmv(vector<double> denseVector);
-    vector<double> spmv_mpi(vector<double> denseVector);
+    //vector<double> spmv_mpi(vector<double> denseVector);
+    int getRowSize();
+    vector<long int> getRow();
+    vector<long int> getCol();
+    vector<double> getVal();
 private:
     vector<double> val;
     vector<long int> row;
@@ -41,7 +46,7 @@ public:
     void initialize(string path);
     void print();
     vector<double> spmv(vector<double> denseVector);
-    vector<double> spmv_mpi(vector<double> denseVector);
+    //vector<double> spmv_mpi(vector<double> denseVector);
 private:
     vector<vector<long int>> colInd;
     vector<vector<double>> val;
@@ -54,7 +59,7 @@ public:
     void initialize(string path);
     void print();
     vector<double> spmv(vector<double> denseVector);
-    vector<double> spmv_mpi(vector<double> denseVector);
+    //vector<double> spmv_mpi(vector<double> denseVector);
     
 private:
     vector<double> val;
@@ -70,7 +75,7 @@ public:
     vector<double> spmv(vector<double> denseVector);
     void data();
 
-private:
+protected:
     vector<vector<double>> acc;
     vector<vector<double>> acr;
     vector<vector<long int>> ai;
@@ -78,5 +83,7 @@ private:
     vector<vector<long int>> jc;
     vector<vector<long int>> ic;
 };
+
+vector<double> spmv_mpi(COO matrix, vector<double> denseVector);
 
 #endif

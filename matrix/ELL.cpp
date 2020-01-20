@@ -111,7 +111,7 @@ vector<double> ELL::spmv(vector<double> denseVector){
     return result;
 }
 
-vector<double> ELL::spmv_mpi(vector<double> denseVector){
+/* vector<double> ELL::spmv_mpi(vector<double> denseVector){
     int my_rank;
     int p;
     int tag=0;
@@ -143,4 +143,4 @@ vector<double> ELL::spmv_mpi(vector<double> denseVector){
         return result;
     }
     
-}
+} */

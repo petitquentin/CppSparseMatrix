@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <string>
 #include <matrix/matrix.hpp>
-include "mpi.h"
+#include <mpi.h>
 
 using namespace std;
 
@@ -133,7 +133,7 @@ vector<double> CSR::spmv(vector<double> denseVector){
     return result;
 }
 
-vector<double> CSR::spmv_mpi(vector<double> denseVector){
+/* vector<double> CSR::spmv_mpi(vector<double> denseVector){
     int my_rank;
     int p;
     int tag=0;
@@ -175,4 +175,4 @@ vector<double> CSR::spmv_mpi(vector<double> denseVector){
         return result;
     }
     
-}
+} */

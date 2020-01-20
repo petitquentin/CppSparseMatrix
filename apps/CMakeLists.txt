@@ -13,3 +13,13 @@ target_link_libraries(app PRIVATE matrix_library)
 target_include_directories(app PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_include_directories(app PUBLIC data)
 install(TARGETS app DESTINATION bin)
+
+add_executable(testmpi testMPI.cpp)
+target_compile_features(testmpi PRIVATE cxx_std_17)
+
+target_link_libraries(testmpi PUBLIC MPI::MPI_CXX)
+target_link_libraries(testmpi PRIVATE matrix_library)
+target_include_directories(testmpi PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(testmpi PUBLIC data)
+install(TARGETS testmpi DESTINATION bin)
+

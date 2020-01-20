@@ -5,7 +5,7 @@
 #include <fstream>
 #include <algorithm>
 #include <string>
-include "mpi.h"
+#include "mpi.h"
 #include <matrix/matrix.hpp>
 
 using namespace std;
@@ -59,7 +59,7 @@ vector<double> COO::spmv(vector<double> denseVector){
     return result;
 }
 
-vector<double> COO::spmv(vector<double> denseVector){
+/* vector<double> COO::spmv(vector<double> denseVector){
     
     
     RowDouble result(MNL[1]);
@@ -77,9 +77,26 @@ vector<double> COO::spmv(vector<double> denseVector){
         result[row[i]] += val[i]*denseVector[col[i]];
     }
     return result;
+} */
+
+int COO::getRowSize(){
+    return row.size();
 }
 
-vector<double> COO::spmv_mpi(vector<double> denseVector){
+vector<long int> COO::getRow(){
+    return row;
+}
+vector<long int> COO::getCol(){
+    return col;
+}
+
+vector<double> COO::getVal(){
+    return val;
+}
+
+
+
+/* vector<double> COO::spmv_mpi(vector<double> denseVector){
     int my_rank;
     int p;
     int tag=0;
@@ -111,4 +128,4 @@ vector<double> COO::spmv_mpi(vector<double> denseVector){
         return result;
     }
     
-}
+} */

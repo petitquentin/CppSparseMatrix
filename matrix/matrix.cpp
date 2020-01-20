@@ -30,3 +30,13 @@ void Matrix::read_mtx_file(string filePath, vector<double>& val, vector<long int
     }
 };
 
+long int Matrix::getMNL(int num){
+    if(num < 3 and num >=0){
+        return MNL[num];
+    }else{
+        return -1;
+    }
+}
+
+
+
