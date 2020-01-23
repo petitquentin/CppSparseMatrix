@@ -83,15 +83,15 @@ int COO::getRowSize(){
     return row.size();
 }
 
-vector<long int> COO::getRow(){
-    return row;
+long int * COO::getRow(){
+    return row.data();
 }
-vector<long int> COO::getCol(){
-    return col;
+long int * COO::getCol(){
+    return col.data();
 }
 
-vector<double> COO::getVal(){
-    return val;
+double * COO::getVal(){
+    return val.data();
 }
 
 
@@ -106,7 +106,7 @@ vector<double> COO::getVal(){
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &p);
 
-    typedef vector<double> RowDouble;
+    typedef vector<double> RowDouble;result.size()
     RowDouble result[MNL[1]];
     if(MNL[1] != denseVector.size()){
         for(long int i = 0; i < result.size(); i++){

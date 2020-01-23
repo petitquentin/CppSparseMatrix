@@ -133,6 +133,21 @@ vector<double> CSR::spmv(vector<double> denseVector){
     return result;
 }
 
+int CSR::getValSize(){
+    return val.size();
+}
+long int * CSR::getPtr(){
+    return ptr.data();
+}
+long int * CSR::getInd(){
+    return ind.data();
+}
+
+double * CSR::getVal(){
+    return val.data();
+}
+
+
 /* vector<double> CSR::spmv_mpi(vector<double> denseVector){
     int my_rank;
     int p;

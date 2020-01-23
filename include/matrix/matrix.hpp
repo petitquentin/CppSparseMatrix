@@ -31,9 +31,9 @@ public:
     vector<double> spmv(vector<double> denseVector);
     //vector<double> spmv_mpi(vector<double> denseVector);
     int getRowSize();
-    vector<long int> getRow();
-    vector<long int> getCol();
-    vector<double> getVal();
+    long int * getRow();
+    long int * getCol();
+    double * getVal();
 private:
     vector<double> val;
     vector<long int> row;
@@ -60,7 +60,10 @@ public:
     void print();
     vector<double> spmv(vector<double> denseVector);
     //vector<double> spmv_mpi(vector<double> denseVector);
-    
+    int getValSize();
+    long int * getPtr();
+    long int * getInd();
+    double * getVal();
 private:
     vector<double> val;
     vector<long int> ind;
@@ -84,6 +87,7 @@ protected:
     vector<vector<long int>> ic;
 };
 
-vector<double> spmv_mpi(COO matrix, vector<double> denseVector);
+vector<double> spmv_mpi(COO *matrix, vector<double> denseVector);
+vector<double> spmv_mpi(CSR *matrix, vector<double> denseVector);
 
 #endif
