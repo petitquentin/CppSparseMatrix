@@ -5,17 +5,62 @@
 #include <fstream>
 #include <algorithm>
 #include <string>
-#include "mpi.h"
+#include <mpi.h>
 #include <matrix/matrix.hpp>
 
 using namespace std;
 
 void COO::initialize(string path)
 {
-    val.clear();
-    row.clear();
-    col.clear();
-    read_mtx_file(path, val, row, col);
+    if(val != NULL){
+        free(val);
+        val = NULL;
+    }
+    if(row != NULL){
+        free(row);
+        row = NULL;
+    }
+    if(col != NULL){
+        free(col);
+        col = NULL;
+    }
+
+
+    vector<double> values;
+    vector<long int> rowInit;
+    vector<long int> colInit;
+    read_mtx_file(path, values, rowInit, colInit);
+
+    
+    val = (double *)malloc(sizeof(double) * MNL[2]);
+    col = (long int *)malloc(sizeof(long int) * MNL[2]);
+    row = (long int *)malloc(sizeof(long int) * MNL[2]);
+
+    //val = values.data();
+    //col = colInit.data();
+    //row = rowInit.data();
+    copy(values.data(), values.data() + values.size(), val);
+    copy(colInit.data(), colInit.data() + colInit.size(), col);
+    copy(rowInit.data(), rowInit.data() + rowInit.size(), row);
+    
+
+    /* cout << "Col" << endl;
+    for(int i = 0; i < MNL[2]; i++){
+        cout << col[i] << ' ';
+    }
+    cout << endl;
+
+    cout << "row" << endl;
+    for(int i = 0; i < MNL[2]; i++){
+        cout << row[i] << ' ';
+    }
+    cout << endl;
+
+    cout << "Val" << endl;
+    for(int i = 0; i < MNL[2]; i++){
+        cout << val[i] << ' ';
+    }
+    cout << endl; */
 };
 
 void COO::print(){
@@ -25,11 +70,10 @@ void COO::print(){
         for(int j = 0; j < MNL[1]; j++){
             actualRow[j] = 0;
         }
-        for(int j = 0; j < row.size(); j++){
+        for(int j = 0; j < MNL[2]; j++){
             if(row[j] == i){
                 actualRow[col[j]] = val[j];
             }
-            
         }
         cout << endl;
         for(int j = 0; j < actualRow.size(); j++){
@@ -39,24 +83,25 @@ void COO::print(){
     cout << endl;
 };
 
-vector<double> COO::spmv(vector<double> denseVector){
-    
-    typedef vector<double> RowDouble;
-    RowDouble result(MNL[1]);
-    if(MNL[1] != denseVector.size()){
-        for(long int i = 0; i < result.size(); i++){
-            result[i] = NULL;
+void COO::spmv(double * denseVector, int sizeDenseVector, double ** result){
+    if(*result != NULL){
+        *result = (double *)realloc(*result, sizeDenseVector * sizeof(double));
+    }else{
+        *result = (double *)malloc(sizeof(double) * sizeDenseVector);
+    }
+    if(MNL[1] != sizeDenseVector){
+        for(long int i = 0; i < sizeDenseVector; i++){
+            (*result)[i] = NULL;
         }
         cout << "the vector is not of the right size" << endl;
-        return result;
+    }else{
+        for(int i = 0; i < sizeDenseVector; i++){
+            (*result)[i] = 0;
+        }
+        for(int i = 0; i < MNL[2]; i++){
+            (*result)[row[i]] += val[i]*denseVector[col[i]];
+        }
     }
-    for(long int i = 0; i < result.size(); i++){
-        result[i] = 0;
-    }
-    for(long int i = 0; i < row.size(); i++){
-        result[row[i]] += val[i]*denseVector[col[i]];
-    }
-    return result;
 }
 
 /* vector<double> COO::spmv(vector<double> denseVector){
@@ -80,18 +125,18 @@ vector<double> COO::spmv(vector<double> denseVector){
 } */
 
 int COO::getRowSize(){
-    return row.size();
+    return MNL[2];
 }
 
 long int * COO::getRow(){
-    return row.data();
+    return row;
 }
 long int * COO::getCol(){
-    return col.data();
+    return col;
 }
 
 double * COO::getVal(){
-    return val.data();
+    return val;
 }
 
 

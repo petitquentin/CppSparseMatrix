@@ -37,6 +37,3 @@ long int Matrix::getMNL(int num){
         return -1;
     }
 }
-
-
-

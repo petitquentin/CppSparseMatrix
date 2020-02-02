@@ -11,23 +11,30 @@ using namespace std;
 
 
 void SGP::initialize(string path){
-    
     vector<double> values;
     vector<long int> row;
     vector<long int> col;
 
     read_mtx_file(path, values, row, col);
     
-    int maxInd = 0;
-    int nbValues;
+    int nbValuesRow;
+    int nbValuesCol;
     for (int i = 1; i <= MNL[0]; i++){
-        nbValues = count(row.begin(), row.end(), i);
-        if(nbValues > maxInd){
-            maxInd = nbValues;
+        nbValuesRow = 0;
+        nbValuesCol = 0;
+        for(int j = 0; j <= MNL[2]; j++){
+            if(row[j] == i){
+                nbValuesRow++;
+            }
+            if(col[j] == i){
+                nbValuesCol++;
+            }
         }
-        nbValues = count(col.begin(), col.end(), i);
-        if(nbValues > maxInd){
-            maxInd = nbValues;
+        if(nbValuesRow > maxInd){
+            maxInd = nbValuesRow;
+        }
+        if(nbValuesCol > maxInd){
+            maxInd = nbValuesCol;
         }
     }
     
@@ -36,66 +43,85 @@ void SGP::initialize(string path){
     typedef vector<double> RowDouble;
     vector<long int> initializationAcc;
     vector<long int> initializationAcr;
-    acc.clear();
-    acr.clear();
-    ai.clear();
-    aj.clear();
-    ic.clear();
-    jc.clear();
+    if(acc != NULL){
+        free(acc);
+        acc = NULL;
+    }
+    if(acr != NULL){
+        free(acr);
+        acr = NULL;
+    }
+    if(ai != NULL){
+        free(ai);
+        ai = NULL;
+    }
+    if(aj != NULL){
+        free(aj);
+        aj = NULL;
+    }
+    if(ic != NULL){
+        free(ic);
+        ic = NULL;
+    }
+    if(jc != NULL){
+        free(jc);
+        jc = NULL;
+    }
+    acr = (double *)malloc(sizeof(double) * MNL[0] * maxInd);
+    acc = (double *)malloc(sizeof(double) * MNL[0] * maxInd);
+    ic = (long int*)malloc(sizeof(long int) * MNL[0] * maxInd);
+    jc = (long int*)malloc(sizeof(long int) * MNL[0] * maxInd);
+    ai = (long int*)malloc(sizeof(long int) * MNL[0] * maxInd);
+    aj = (long int*)malloc(sizeof(long int) * MNL[0] * maxInd);
 
     for(int i = 0; i < MNL[0]; i++){
-        RowLongInt rowLongInt(maxInd);
-        RowDouble rowDouble(maxInd);
-        for(int j = 0; j < maxInd; j++){
-            rowLongInt[j] = -1;
-            rowDouble[j] = nan("0");
-        }
-        aj.push_back(rowLongInt);
-        ic.push_back(rowLongInt);
-        acc.push_back(rowDouble);
         initializationAcc.push_back(0);
         initializationAcr.push_back(0);
     }
-    for(int i = 0; i < maxInd; i++){
-        RowLongInt rowLongInt(MNL[0]);
-        RowDouble rowDouble(MNL[0]);
-        for(int j = 0; j < MNL[0]; j++){
-            rowLongInt[j] = -1;
-            rowDouble[j] = nan("0");
-        }
-        ai.push_back(rowLongInt);
-        jc.push_back(rowLongInt);
-        acr.push_back(rowDouble);
+    for(int i = 0; i < maxInd * MNL[0]; i++){
+        ai[i] = -1;
+        aj[i] = -1;
+        ic[i] = -1;
+        jc[i] = -1;
+        acr[i] = nan("0");
+        acc[i] = nan("0");
     }
 
-    for(int i = 0; i< row.size(); i ++){
-        aj[row[i]][initializationAcc[row[i]]] = col[i];
-        acc[row[i]][initializationAcc[row[i]]] = values[i];
+    for(int i = 0; i< MNL[2]; i ++){
+        aj[row[i] * maxInd + initializationAcc[row[i]]] = col[i];
+        acc[row[i] * maxInd + initializationAcc[row[i]]] = values[i];
         initializationAcc[row[i]] = initializationAcc[row[i]] + 1; 
     }
-    for(int i = 0; i< col.size(); i ++){
-        ai[initializationAcr[col[i]]][col[i]] = row[i];
-        acr[initializationAcr[col[i]]][col[i]] = values[i];
+    for(int i = 0; i< MNL[2]; i ++){
+        ai[initializationAcr[col[i]] * MNL[0] + col[i]] = row[i];
+        acr[initializationAcr[col[i]] * MNL[0] + col[i]] = values[i];
         initializationAcr[col[i]] = initializationAcr[col[i]] + 1;
     }
 
     //Initialization of Ic and Jc
-    for(int i = 0; i < ai.size(); i++){
-        for(int j = 0; j < aj.size(); j++){
-            if(ai[i][j] != -1){
-                auto result = find(aj[ai[i][j]].begin(), aj[ai[i][j]].end(), j);
-                if(result != aj[ai[i][j]].end()){
-                    jc[i][j] = distance(aj[ai[i][j]].begin(), result);
-                }else{
-                    cout << "We'd a problem" << endl;
+    for(int i = 0; i < maxInd; i++){
+        for(int j = 0; j < MNL[0]; j++){
+            if(ai[i * MNL[0] + j] != -1){
+                long int result = -1;
+                for(long int k  = 0; k < maxInd; k++){
+                    if(aj[ai[i*MNL[0] + j] + k] == j){
+                        result = k;
+                    }
+                    if(k != -1){
+                        jc[i*MNL[0] + j] = result;
+                    }else{
+                        cout << "We'd a problem" << endl;
+                    }
                 }
+                //auto result = find(aj[ai[i][j]].begin(), aj[ai[i][j]].end(), j);
+                //if(result != aj[ai[i* MNL[0] + j]].end()){
             }
-            if(aj[j][i] != -1){
+            if(aj[j * maxInd + i] != -1){
                 long int k = 0;
-                while(ai[k][aj[j][i]] != j){
+                while(ai[k * MNL[0] + (aj[j* maxInd + i])] != j){
                     k++;
                 }
-                ic[j][i] = k;
+                ic[j*maxInd + i] = k;
             }
             
         }
@@ -106,9 +132,9 @@ void SGP::data(){
     cout << "---" << endl;
     cout << "Acc" << endl;
     cout << "---" << endl;
-    for(long int i = 0; i < acc.size(); i++){
-        for(long int j = 0; j < acc[i].size(); j++){
-            cout << acc[i][j] << ' ';
+    for(long int i = 0; i < MNL[0]; i++){
+        for(long int j = 0; j < maxInd; j++){
+            cout << acc[i * maxInd + j] << ' ';
         }
         cout << endl;
     }
@@ -118,9 +144,9 @@ void SGP::data(){
     cout << "---" << endl;
     cout << "Acr" << endl;
     cout << "---" << endl;
-    for(long int i = 0; i < acr.size(); i++){
-        for(long int j = 0; j < acr[i].size(); j++){
-            cout << acr[i][j] << ' ';
+    for(long int i = 0; i < maxInd; i++){
+        for(long int j = 0; j < MNL[0]; j++){
+            cout << acr[i * MNL[0] + j] << ' ';
         }
         cout << endl;
     }
@@ -129,9 +155,9 @@ void SGP::data(){
     cout << "---" << endl;
     cout << " Ai" << endl;
     cout << "---" << endl;
-    for(long int i = 0; i < ai.size(); i++){
-        for(long int j = 0; j < ai[i].size(); j++){
-            cout << ai[i][j] << ' ';
+    for(long int i = 0; i < maxInd; i++){
+        for(long int j = 0; j < MNL[0]; j++){
+            cout << ai[i * MNL[0] + j] << ' ';
         }
         cout << endl;
     }
@@ -140,9 +166,9 @@ void SGP::data(){
     cout << "---" << endl;
     cout << " Aj" << endl;
     cout << "---" << endl;
-    for(long int i = 0; i < aj.size(); i++){
-        for(long int j = 0; j < aj[i].size(); j++){
-            cout << aj[i][j] << ' ';
+    for(long int i = 0; i < MNL[0]; i++){
+        for(long int j = 0; j < maxInd; j++){
+            cout << aj[i * maxInd + j] << ' ';
         }
         cout << endl;
     }
@@ -151,9 +177,9 @@ void SGP::data(){
     cout << "---" << endl;
     cout << " Jc" << endl;
     cout << "---" << endl;
-    for(long int i = 0; i < jc.size(); i++){
-        for(long int j = 0; j < jc[i].size(); j++){
-            cout << jc[i][j] << ' ';
+    for(long int i = 0; i < maxInd; i++){
+        for(long int j = 0; j < MNL[0]; j++){
+            cout << jc[i * MNL[0] + j] << ' ';
         }
         cout << endl;
     }
@@ -162,9 +188,9 @@ void SGP::data(){
     cout << "---" << endl;
     cout << " Ic" << endl;
     cout << "---" << endl;
-    for(long int i = 0; i < ic.size(); i++){
-        for(long int j = 0; j < ic[i].size(); j++){
-            cout << ic[i][j] << ' ';
+    for(long int i = 0; i < MNL[0]; i++){
+        for(long int j = 0; j < maxInd; j++){
+            cout << ic[i * maxInd + j] << ' ';
         }
         cout << endl;
     }
@@ -179,12 +205,17 @@ void SGP::print(){
         for(long int j = 0; j < MNL[1]; j++){
             row[j] = 0;
         }
-        for(int j = 0; j < aj[i].size(); j++){
-            if(aj[i][j] != -1){
-                row[aj[i][j]] = acc[i][j];
+        for(int j = 0; j < maxInd; j ++){
+            if(aj[i * maxInd + j] != -1){
+                row[aj[i * maxInd + j]] = acc[i * maxInd + j];
+            }
+        }
+        /* for(int j = 0; j < MNL[0]; j++){
+            if(aj[i * maxInd + j] != -1){
+                row[aj[i * maxInd + j]] = acc[i * maxInd + j];
             }
             
-        }
+        } */
         cout << endl;
         for(int j = 0; j < row.size(); j++){
             cout << row[j] << ' ';
@@ -193,24 +224,27 @@ void SGP::print(){
     cout << endl;
 };
 
-vector<double> SGP::spmv(vector<double> denseVector){
-    typedef vector<double> RowDouble;
-    RowDouble result(MNL[1]);
-    if(MNL[1] != denseVector.size()){
-        for(int i = 0; i < result.size(); i++){
-            result[i] = 0;
+void SGP::spmv(double * denseVector, int sizeDenseVector, double ** result){
+    if(*result != NULL){
+        *result = (double *)realloc(*result, sizeDenseVector * sizeof(double));
+    }else{
+        *result = (double *)malloc(sizeof(double) * sizeDenseVector);
+    }
+    if(MNL[1] != sizeDenseVector){
+        for(int i = 0; i < sizeDenseVector; i++){
+            (*result)[i] = 0;
         }
         cout << "the vector is not of the right size" << endl;
-        return result;
-    }
-    for(long int i = 0; i < result.size(); i ++){
-        result[i] = 0;
-    }
+    }else{
+        for(long int i = 0; i < sizeDenseVector; i ++){
+            (*result)[i] = 0;
+        }
 
-    for(long int i = 0; i < acc.size(); i++){
-        for(long int j = 0; j < acc[0].size(); j++){
-            if(aj[i][j] != -1){
-                result[i] += acc[i][j] * denseVector[aj[i][j]];
+        for(long int i = 0; i < MNL[0]; i++){
+            for(long int j = 0; j < maxInd; j++){
+                if(aj[i * maxInd + j] != -1){
+                    (*result)[i] += acc[i * maxInd + j] * denseVector[aj[i * maxInd + j]];
+                }
             }
         }
     }
@@ -224,5 +258,4 @@ vector<double> SGP::spmv(vector<double> denseVector){
             }
         }
     } */
-    return result;
 }

@@ -28,16 +28,16 @@ class COO : public Matrix
 public:
     void initialize(string path);
     void print();
-    vector<double> spmv(vector<double> denseVector);
+    void spmv(double * denseVector, int sizeDenseVector, double ** result);
     //vector<double> spmv_mpi(vector<double> denseVector);
     int getRowSize();
     long int * getRow();
     long int * getCol();
     double * getVal();
 private:
-    vector<double> val;
-    vector<long int> row;
-    vector<long int> col;
+    double * val = NULL;
+    long int * row = NULL;
+    long int * col = NULL;
 };
 
 class ELL : public Matrix // Ellpack format
@@ -45,11 +45,15 @@ class ELL : public Matrix // Ellpack format
 public: 
     void initialize(string path);
     void print();
-    vector<double> spmv(vector<double> denseVector);
+    void spmv(double * denseVector, int sizeDenseVector, double ** result);
     //vector<double> spmv_mpi(vector<double> denseVector);
+    long int sizeColInd(int num);
+    double * getVal();
+    long int * getColInd();
 private:
-    vector<vector<long int>> colInd;
-    vector<vector<double>> val;
+    long int * colInd = NULL;
+    double * val = NULL;
+    long int maxColInd;
 
 };
 
@@ -58,16 +62,16 @@ class CSR : public Matrix //CRS Format
 public:
     void initialize(string path);
     void print();
-    vector<double> spmv(vector<double> denseVector);
+    void spmv(double * denseVector, int sizeDenseVector, double ** result);
     //vector<double> spmv_mpi(vector<double> denseVector);
     int getValSize();
     long int * getPtr();
     long int * getInd();
     double * getVal();
 private:
-    vector<double> val;
-    vector<long int> ind;
-    vector<long int> ptr;
+    double * val = NULL;
+    long int * ind = NULL;
+    long int * ptr = NULL;
 };
 
 class SGP : public Matrix
@@ -75,19 +79,22 @@ class SGP : public Matrix
 public:
     void initialize(string path);
     void print();
-    vector<double> spmv(vector<double> denseVector);
+    void spmv(double * denseVector, int sizeDenseVector, double ** result);
     void data();
 
 protected:
-    vector<vector<double>> acc;
-    vector<vector<double>> acr;
-    vector<vector<long int>> ai;
-    vector<vector<long int>> aj;
-    vector<vector<long int>> jc;
-    vector<vector<long int>> ic;
+    double * acc = NULL;
+    double * acr = NULL;
+    long int * ai = NULL;
+    long int * aj = NULL;
+    long int * jc = NULL;
+    long int * ic = NULL;
+    int maxInd = -1;
 };
 
-vector<double> spmv_mpi(COO *matrix, vector<double> denseVector);
-vector<double> spmv_mpi(CSR *matrix, vector<double> denseVector);
+void spmv_mpi(COO *matrix, double * denseVector, int sizeDenseVector, double ** result);
+void spmv_mpi(CSR *matrix, double * denseVector, int sizeDenseVector, double ** result);
+void spmv_mpi(ELL *matrix, double * denseVector, int sizeDenseVector, double ** result);
+//void spmv_mpi(SGP *matrix, double * denseVector, int sizeDenseVector, double ** result);
 
 #endif
