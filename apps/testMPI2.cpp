@@ -12,33 +12,21 @@
 using namespace std;
     
 int main(int argc, char** argv){
-    int size = 5;
+    int size = 10000;
     double * result = (double *)malloc(sizeof(double) * size);
     double * result1 = NULL;
     double * result2 = NULL;
     int my_rank, p;
-    cout << sizeof(p) << endl;
-    result[0] = 1;
-    result[1] = 2;
-    result[2] = 3;
-    result[3] = 4;
-    result[4] = 5;
-
-    double * vec = (double *)malloc(sizeof(double) * 8);
-    for(int i = 0; i < 8; i++){
-        vec[i] = i + 1;
+    for(int i = 0; i < size; i++){
+        result[i] = i/100.0;
     }
 
     cout << "COO" << endl; 
     COO myMatrix3;
-    myMatrix3.initialize("data/test2.mtx");
-    //myMatrix3.print();
-    myMatrix3.spmv(result, size, &result1);
-    cout << "result :" << endl;
-    for(int i = 0; i < size; i++){
-        cout << result1[i] << ' ';
+    if(my_rank == 0){
+        myMatrix3.initialize("data/smg2s.mtx");
     }
-    cout << endl;
+    
 
     MPI_Init(&argc, &argv);
 
@@ -46,7 +34,7 @@ int main(int argc, char** argv){
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &p);
     
-    spmv_mpi(&myMatrix3, result, size, &result2);
+    /* spmv_mpi(&myMatrix3, result, size, &result2);
 
     cout << "result_MPI :" << endl;
     for(int i = 0; i < size; i++){
@@ -60,7 +48,7 @@ int main(int argc, char** argv){
     MPI_Barrier(MPI_COMM_WORLD);
     cout << "____CSR____" <<endl;
     CSR myMatrix;
-    myMatrix.initialize("data/test2.mtx");
+    myMatrix.initialize("data/smg2s.mtx");
 
     spmv_mpi(&myMatrix, result, size, &result2);
     MPI_Barrier(MPI_COMM_WORLD);
@@ -71,23 +59,17 @@ int main(int argc, char** argv){
     cout << endl;
 
     free(result2);
-    result2 = NULL;
+    result2 = NULL; */
 
     MPI_Barrier(MPI_COMM_WORLD);
     cout << "____ELL____" <<endl;
     ELL myMatrix2;
-    myMatrix2.initialize("data/test3.mtx");
-    myMatrix2.spmv(result, size, &result2);
-    cout << "result :" << endl;
-    for(int i = 0; i < size; i++){
-        cout << result2[i] << ' ';
-    }
-    cout << endl;
+    myMatrix2.initialize("data/smg2s10000.mtx");
 
     free(result2);
     result2 = NULL;
 
-    spmv_mpi(&myMatrix2, vec, 8, &result2);
+    spmv_mpi(&myMatrix2, result, size, &result2);
 
     cout << "result_MPI ELL " << my_rank << " :" << endl;
     for(int i = 0; i < 8; i++){
@@ -100,16 +82,21 @@ int main(int argc, char** argv){
     result2 = NULL;
     cout << "____SGP____" <<endl;
     SGP myMatrix1;
-    myMatrix1.initialize("data/test3.mtx");
+    if(my_rank == 0){
+        myMatrix1.initialize("data/smg2s10000.mtx");
+        //myMatrix1.data();
+    }
+    
     MPI_Barrier(MPI_COMM_WORLD);
+    cout << "CC" <<endl;
 
-    spmv_mpi(&myMatrix1, vec, 8, &result2);
+    spmv_mpi(&myMatrix1, result, size, &result2);
 
     cout << "result_MPI SGP " << my_rank << " :" << endl;
     for(int i = 0; i < 8; i++){
         cout << result2[i] << ' ';
     }
-    cout << endl;
+    cout << endl; 
 
 
     MPI_Finalize();

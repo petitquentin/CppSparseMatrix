@@ -58,7 +58,7 @@ void ELL::initialize(string path){
         val[row[i]*maxInd+initialization[row[i]]] = values[i];
         initialization[row[i]] = initialization[row[i]] + 1; 
     }
-    cout << "ColInd : " << endl;
+    /* cout << "ColInd : " << endl;
     for(int i = 0; i < MNL[0]; i++){
         for(int j = 0; j < maxInd; j++){
             cout << colInd[i*maxInd + j] << ' ';
@@ -72,7 +72,7 @@ void ELL::initialize(string path){
             cout << val[i*maxInd+j] << ' ';
         }
         cout << endl;
-    }
+    } */
 };
 
 void ELL::print(){

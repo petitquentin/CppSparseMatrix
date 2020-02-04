@@ -81,7 +81,13 @@ public:
     void print();
     void spmv(double * denseVector, int sizeDenseVector, double ** result);
     void data();
-
+    long int getMaxInd();
+    long int * getAi();
+    long int * getAj();
+    long int * getJc();
+    long int * getIc();
+    double * getAcc();
+    double * getAcr();
 protected:
     double * acc = NULL;
     double * acr = NULL;
@@ -95,6 +101,6 @@ protected:
 void spmv_mpi(COO *matrix, double * denseVector, int sizeDenseVector, double ** result);
 void spmv_mpi(CSR *matrix, double * denseVector, int sizeDenseVector, double ** result);
 void spmv_mpi(ELL *matrix, double * denseVector, int sizeDenseVector, double ** result);
-//void spmv_mpi(SGP *matrix, double * denseVector, int sizeDenseVector, double ** result);
+void spmv_mpi(SGP *matrix, double * denseVector, int sizeDenseVector, double ** result);
 
 #endif

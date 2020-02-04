@@ -20,11 +20,16 @@ void Matrix::read_mtx_file(string filePath, vector<double>& val, vector<long int
             long int r, c;
             double value;
             reader >> r >> c >> value;
-            row.push_back(r-1);
-            col.push_back(c-1);
-            val.push_back(value);
+            if(r <= MNL[0] && c <= MNL[1]){
+                row.push_back(r-1);
+                col.push_back(c-1);
+                val.push_back(value);
+            }
         }
         reader.close();
+        if(val.size() != MNL[2]){
+            MNL[2] = val.size();
+        }
     }else{
         cout << "impossible to open the file" << endl;
     }

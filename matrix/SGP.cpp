@@ -99,19 +99,20 @@ void SGP::initialize(string path){
     }
 
     //Initialization of Ic and Jc
-    for(int i = 0; i < maxInd; i++){
-        for(int j = 0; j < MNL[0]; j++){
+    for(long int i = 0; i < maxInd; i++){
+        for(long int j = 0; j < MNL[0]; j++){
             if(ai[i * MNL[0] + j] != -1){
                 long int result = -1;
                 for(long int k  = 0; k < maxInd; k++){
-                    if(aj[ai[i*MNL[0] + j] + k] == j){
+                    if(aj[ai[i*MNL[0] + j] * maxInd + k] == j){
+                        //cout << result << " : result  (" << ai[i*MNL[0] + j] << ' ' << aj[ai[i*MNL[0] + j] * maxInd + k] << ") " <<  endl;
                         result = k;
                     }
-                    if(k != -1){
-                        jc[i*MNL[0] + j] = result;
-                    }else{
-                        cout << "We'd a problem" << endl;
-                    }
+                }
+                if(result != -1){
+                    jc[i*MNL[0] + j] = result;
+                }else{
+                    cout << "We'd a problem" << endl;
                 }
                 //auto result = find(aj[ai[i][j]].begin(), aj[ai[i][j]].end(), j);
                 //if(result != aj[ai[i* MNL[0] + j]].end()){
@@ -195,6 +196,8 @@ void SGP::data(){
         cout << endl;
     }
     cout << endl;
+    cout << MNL[1] << endl;
+    cout << endl; 
 
 }
 
@@ -258,4 +261,28 @@ void SGP::spmv(double * denseVector, int sizeDenseVector, double ** result){
             }
         }
     } */
+}
+
+long int SGP::getMaxInd(){
+    return maxInd;
+}
+
+
+long int * SGP::getAi(){
+    return ai;
+}
+long int * SGP::getAj(){
+    return aj;
+}
+long int * SGP::getJc(){
+    return jc;
+}
+long int * SGP::getIc(){
+    return ic;
+}
+double * SGP::getAcc(){
+    return acc;
+}
+double * SGP::getAcr(){
+    return acr;
 }
