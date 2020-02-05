@@ -26,10 +26,11 @@
 #define TAGGET      502
 #define TAGEXCHANGE 503
 #define TAGVECTOR   808
+#define TAGVECTOR2  809
 
 using namespace std;
 
-void spmv_mpi(COO *matrix, double * denseVector, int sizeDenseVector, double ** result){
+void spmvs_mpi(COO *matrix, double * denseVectorX, double * denseVectorB,  int sizeVector, double ** result){
     int my_rank;
     int p;
     int tag=0;
@@ -42,10 +43,10 @@ void spmv_mpi(COO *matrix, double * denseVector, int sizeDenseVector, double ** 
         MNL1 = matrix->getMNL(1);
         rowSize = matrix->getRowSize();
     }
-    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Bcast(&MNL1, 1, MPI_LONG, 0, MPI_COMM_WORLD);
     MPI_Bcast(&rowSize, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
+    double * b = NULL;
+    b = (double *)malloc(sizeof(double) * sizeVector);
     
 
     typedef vector<double> RowDouble;
@@ -71,7 +72,7 @@ void spmv_mpi(COO *matrix, double * denseVector, int sizeDenseVector, double ** 
 
         
         //Check if denseVector is in the same size
-        if(MNL1 == sizeDenseVector){
+        if(MNL1 == sizeVector){
             for(long int i = 0; i < MNL1; i++){
                 (*result)[i] = 0;
             }
@@ -82,12 +83,15 @@ void spmv_mpi(COO *matrix, double * denseVector, int sizeDenseVector, double ** 
                 MPI_Send(&val[(int)(i * ceil(rowSize*1.0/p))], sizeData, MPI_DOUBLE, i, TAGVAL, MPI_COMM_WORLD);
                 MPI_Send(&col[(int)(i * ceil(rowSize*1.0/p))], sizeData, MPI_LONG, i, TAGCOL, MPI_COMM_WORLD);
             }
-
+            for(int i = 0; i < sizeVector; i++){
+                b[i] = denseVectorB[i];
+            }
             for(int i = 1; i < p; i++){
-                MPI_Send(denseVector, sizeDenseVector, MPI_DOUBLE, i, TAGVECTOR, MPI_COMM_WORLD);
+                MPI_Send(denseVectorX, sizeVector, MPI_DOUBLE, i, TAGVECTOR, MPI_COMM_WORLD);
+                MPI_Send(denseVectorB, sizeVector, MPI_DOUBLE, i, TAGVECTOR2, MPI_COMM_WORLD);
             }
             for(long int i = 0; i < min(rowSize, (int)(ceil(rowSize*1.0/p))); i++){
-                (*result)[row[i]] += val[i]*denseVector[col[i]];
+                (*result)[row[i]] += val[i]*denseVectorX[col[i]];
             }
             free(row);
             free(col);
@@ -99,7 +103,7 @@ void spmv_mpi(COO *matrix, double * denseVector, int sizeDenseVector, double ** 
             *result = NULL;
         }
     }else{
-        if(MNL1 == sizeDenseVector){
+        if(MNL1 == sizeVector){
             for(long int i = 0; i < MNL1; i++){
                 (*result)[i] = 0;
             }
@@ -114,8 +118,10 @@ void spmv_mpi(COO *matrix, double * denseVector, int sizeDenseVector, double ** 
             MPI_Recv(val, sizeData, MPI_DOUBLE, 0, TAGVAL, MPI_COMM_WORLD, &status);
             MPI_Recv(col, sizeData, MPI_LONG, 0, TAGCOL, MPI_COMM_WORLD, &status);
             double * vec = NULL;
-            vec = (double *)malloc(sizeof(double) * sizeDenseVector);
-            MPI_Recv(vec, sizeDenseVector, MPI_DOUBLE, 0, TAGVECTOR, MPI_COMM_WORLD, &status);
+            vec = (double *)malloc(sizeof(double) * sizeVector);
+            
+            MPI_Recv(vec, sizeVector, MPI_DOUBLE, 0, TAGVECTOR, MPI_COMM_WORLD, &status);
+            MPI_Recv(b, sizeVector, MPI_DOUBLE, 0, TAGVECTOR2, MPI_COMM_WORLD, &status);
             for (long int  i = 0; i < sizeData; i++){
                 (*result)[row[i]] += val[i]*vec[col[i]];
             }
@@ -127,17 +133,22 @@ void spmv_mpi(COO *matrix, double * denseVector, int sizeDenseVector, double ** 
         }else{
             free(*result);
             *result = NULL;
+            free(b);
         }
     }
     
-    if(MNL1 == sizeDenseVector){
+    if(MNL1 == sizeVector){
         //double * resultReduce;
         //resultReduce = (double *)malloc(sizeof(double)*MNL1);
         //MPI_Reduce(result, resultReduce, MNL1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         double * result1 = (double*)malloc(sizeof(double) * MNL1);
         MPI_Allreduce(*result, result1, MNL1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        for(int i = 0; i < sizeVector; i++){
+            result1[i] += b[i];
+        }
         free(*result);
         *result = result1;
+        free(b);
         //free(result);
         //free(resultReduce);
     }
@@ -146,7 +157,7 @@ void spmv_mpi(COO *matrix, double * denseVector, int sizeDenseVector, double ** 
 
 }
 
-void spmv_mpi(CSR * matrix, double * denseVector, int sizeDenseVector, double ** result){
+void spmvs_mpi(CSR * matrix, double * denseVectorX, double * denseVectorB,  int sizeVector, double ** result){
     int my_rank;
     int p;
     int tag=0;
@@ -186,7 +197,7 @@ void spmv_mpi(CSR * matrix, double * denseVector, int sizeDenseVector, double **
 
         
         //Check if denseVector is in the same size
-        if(MNL1 == sizeDenseVector){
+        if(MNL1 == sizeVector){
             for(long int i = 0; i < MNL1; i++){
                 (*result)[i] = 0;
             }
@@ -199,7 +210,6 @@ void spmv_mpi(CSR * matrix, double * denseVector, int sizeDenseVector, double **
                 actualProcessus++;
                 if(actualProcessus >= p){
                     actualProcessus = p;
-                    cout << "Break it" << endl;
                     break;
                 }
                 while(ptr[i]-ptr[lastInd] < ceil(valSize/p) and i<MNL1){
@@ -214,12 +224,12 @@ void spmv_mpi(CSR * matrix, double * denseVector, int sizeDenseVector, double **
                 lastInd = i;
             }
             for(int i = 1; i < actualProcessus; i++){
-                MPI_Send(denseVector, sizeDenseVector, MPI_DOUBLE, i, TAGVECTOR, MPI_COMM_WORLD);
+                MPI_Send(denseVectorX, sizeVector, MPI_DOUBLE, i, TAGVECTOR, MPI_COMM_WORLD);
             }
             if(actualProcessus >= p){
                 for(int i = lastInd-1; i < MNL1; i++){
                     for(int j = 0; j < ptr[i+1]-ptr[i]; j++){
-                        (*result)[i] += denseVector[ind[j+ptr[i]]] * val[j+ptr[i]]; 
+                        (*result)[i] += denseVectorX[ind[j+ptr[i]]] * val[j+ptr[i]]; 
                         //result[i] +=  denseVector[ind[j+ptr[i]-1]] * val[j+ptr[i]-1];
                     }
                 }
@@ -235,7 +245,11 @@ void spmv_mpi(CSR * matrix, double * denseVector, int sizeDenseVector, double **
                 MPI_Recv(&length, 1, MPI_LONG, MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &status);
                 MPI_Recv(&((*result)[indexProcessus[status.MPI_SOURCE]]), length, MPI_DOUBLE, status.MPI_SOURCE, tag, MPI_COMM_WORLD, &status);
             }
-            MPI_Barrier(MPI_COMM_WORLD);
+            
+            //MPI_Barrier(MPI_COMM_WORLD);
+            for(int i = 0; i < sizeVector; i++){
+                (*result)[i] += denseVectorB[i];
+            }
             MPI_Bcast(*result, MNL1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
             free(ptr);
             free(ind);
@@ -250,7 +264,7 @@ void spmv_mpi(CSR * matrix, double * denseVector, int sizeDenseVector, double **
             free(val);
         }
     }else{
-        if(MNL1 == sizeDenseVector){
+        if(MNL1 == sizeVector){
             
             
             long int sizePtr;
@@ -265,8 +279,8 @@ void spmv_mpi(CSR * matrix, double * denseVector, int sizeDenseVector, double **
                 MPI_Recv(val, sizeData, MPI_DOUBLE, 0, TAGVAL, MPI_COMM_WORLD, &status);
                 *result = (double *)malloc(sizeof(double)*sizePtr);
                 double * vec = NULL;
-                vec = (double *)malloc(sizeof(double) * sizeDenseVector);
-                MPI_Recv(vec, sizeDenseVector, MPI_DOUBLE, 0, TAGVECTOR, MPI_COMM_WORLD, &status);
+                vec = (double *)malloc(sizeof(double) * sizeVector);
+                MPI_Recv(vec, sizeVector, MPI_DOUBLE, 0, TAGVECTOR, MPI_COMM_WORLD, &status);
                 for(long int i = 0; i < sizePtr; i++){
                     (*result)[i] = 0;
                 }
@@ -287,13 +301,12 @@ void spmv_mpi(CSR * matrix, double * denseVector, int sizeDenseVector, double **
                 cout << my_rank << " : Ok, I don't work" << endl;
             }
             *result = (double *)malloc(MNL1 * sizeof(double));
-            MPI_Barrier(MPI_COMM_WORLD);
             MPI_Bcast(*result, MNL1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         }
     }
 }
 
-void spmv_mpi(ELL *matrix, double * denseVector, int sizeDenseVector, double ** result){
+void spmvs_mpi(ELL *matrix, double * denseVectorX, double * denseVectorB,  int sizeVector, double ** result){
     int my_rank;
     int p;
     int tag=0;
@@ -334,7 +347,7 @@ void spmv_mpi(ELL *matrix, double * denseVector, int sizeDenseVector, double ** 
         //cout << "VALEUR 0 : " << val[0] << endl;
     
         //Check if denseVector is in the same size
-        if(MNL1 == sizeDenseVector){
+        if(MNL1 == sizeVector){
             for(long int i = 0; i < MNL1; i++){
                 (*result)[i] = 0;
             }
@@ -359,13 +372,13 @@ void spmv_mpi(ELL *matrix, double * denseVector, int sizeDenseVector, double ** 
                 lastInd = i;
             }
             for(int i = 1; i < actualProcessus; i++){
-                MPI_Send(denseVector, sizeDenseVector, MPI_DOUBLE, i, TAGVECTOR, MPI_COMM_WORLD);
+                MPI_Send(denseVectorX, sizeVector, MPI_DOUBLE, i, TAGVECTOR, MPI_COMM_WORLD);
             }
             if(actualProcessus >= p){
                 for(int i = lastInd-1; i < MNL1; i++){
                     for(int j = 0; j < rowSize; j++){
                         if(indCol[j+i*rowSize] != -1){
-                            (*result)[i] += denseVector[indCol[j+i*rowSize]] * val[j+i*rowSize];
+                            (*result)[i] += denseVectorX[indCol[j+i*rowSize]] * val[j+i*rowSize];
                         }
                          
                         //result[i] +=  denseVector[ind[j+ptr[i]-1]] * val[j+ptr[i]-1];
@@ -384,14 +397,17 @@ void spmv_mpi(ELL *matrix, double * denseVector, int sizeDenseVector, double ** 
                 MPI_Recv(&length, 1, MPI_LONG, MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &status);
                 MPI_Recv(&((*result)[indexProcessus[status.MPI_SOURCE]]), length, MPI_DOUBLE, status.MPI_SOURCE, tag, MPI_COMM_WORLD, &status);
             }
+            for(int i = 0; i < sizeVector; i++){
+                (*result)[i] += denseVectorB[i];
+            }
             MPI_Barrier(MPI_COMM_WORLD);
             MPI_Bcast(*result, MNL1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         }else{
         //If not in the same size, stop the function
-            cout << "the vector is not of the right size (size = "<< sizeDenseVector << " MNL = "<< MNL1<< ")" << endl;
+            cout << "the vector is not of the right size (size = "<< sizeVector << " MNL = "<< MNL1<< ")" << endl;
         }
     }else{
-        if(MNL1 == sizeDenseVector){
+        if(MNL1 == sizeVector){
             
             
             long int nbRowProc;
@@ -408,8 +424,8 @@ void spmv_mpi(ELL *matrix, double * denseVector, int sizeDenseVector, double ** 
                     (*result)[i] = 0;
                 }
                 double * vec = NULL;
-                vec = (double *)malloc(sizeof(double) * sizeDenseVector);
-                MPI_Recv(vec, sizeDenseVector, MPI_DOUBLE, 0, TAGVECTOR, MPI_COMM_WORLD, &status);
+                vec = (double *)malloc(sizeof(double) * sizeVector);
+                MPI_Recv(vec, sizeVector, MPI_DOUBLE, 0, TAGVECTOR, MPI_COMM_WORLD, &status);
                 for (long int  i = 0; i < nbRowProc; i++){
                     for(long int j = 0; j < rowSize; j++){
                         if(ind[i*rowSize+j] != -1){
@@ -436,7 +452,7 @@ void spmv_mpi(ELL *matrix, double * denseVector, int sizeDenseVector, double ** 
 
 }
 
-void spmv_mpi(SGP *matrix, double * denseVector, int sizeDenseVector, double ** result){
+void spmvs_mpi(SGP *matrix, double * denseVectorX, double * denseVectorB,  int sizeVector, double ** result){
     int my_rank;
     int p;
     int my_x, my_y, sizeX, sizeY;
@@ -451,7 +467,7 @@ void spmv_mpi(SGP *matrix, double * denseVector, int sizeDenseVector, double ** 
         MNL1 = matrix->getMNL(1);
         maxInd = matrix->getMaxInd();
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    //MPI_Barrier(MPI_COMM_WORLD);
     MPI_Bcast(&MNL1, 1, MPI_LONG, 0, MPI_COMM_WORLD);
     MPI_Bcast(&maxInd, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
@@ -462,6 +478,7 @@ void spmv_mpi(SGP *matrix, double * denseVector, int sizeDenseVector, double ** 
     long int * aj = NULL;
     long int * ic = NULL;
     double * vecX = NULL;
+    double * vecB = NULL;
 
 
     typedef vector<double> RowDouble;
@@ -481,7 +498,7 @@ void spmv_mpi(SGP *matrix, double * denseVector, int sizeDenseVector, double ** 
     }
     //cout << "xGrid = " << xGrid << " yGrid = " << yGrid << " MNL1 = " << MNL1 << endl;
     //cout << "COUCOU " << my_rank << endl;
-    if(sizeDenseVector == MNL1){
+    if(sizeVector == MNL1){
         if(my_rank == 0){
             /* vector<long int> row = matrix.getRow();
             vector<long int> col = matrix.getCol();
@@ -521,7 +538,8 @@ void spmv_mpi(SGP *matrix, double * denseVector, int sizeDenseVector, double ** 
             for(int i = 0; i < floor(maxInd/yGrid); i++){
                 for(int j = 0; j < MNL1; j++){
                     if(floor(i * MNL1/xGrid) + floor(j/xGrid) != 0){
-                        MPI_Send(&denseVector[j], 1, MPI_DOUBLE, floor(i * MNL1/xGrid) + floor(j/xGrid), j%xGrid, MPI_COMM_WORLD);
+                        MPI_Send(&denseVectorX[j], 1, MPI_DOUBLE, floor(i * MNL1/xGrid) + floor(j/xGrid), j%xGrid, MPI_COMM_WORLD);
+                        MPI_Send(&denseVectorB[j], 1, MPI_DOUBLE, floor(i * MNL1/xGrid) + floor(j/xGrid), (j%xGrid)*2, MPI_COMM_WORLD);
                     }
                 }
             }
@@ -536,6 +554,7 @@ void spmv_mpi(SGP *matrix, double * denseVector, int sizeDenseVector, double ** 
             aj = (long int *)malloc(sizeof(long int) * sizeX * sizeY);
             ic = (long int *)malloc(sizeof(long int) * sizeY * sizeX);
             vecX = (double *)malloc(sizeof(double) * sizeX);
+            vecB = (double *)malloc(sizeof(double) * sizeX);
             for(int i = 0; i < sizeY; i++){
                 for(int j = 0; j < sizeX; j++){
                     acr[i*sizeX + j] = acrc[i*MNL1 + j];
@@ -544,7 +563,8 @@ void spmv_mpi(SGP *matrix, double * denseVector, int sizeDenseVector, double ** 
                     acc[i*sizeX + j] = accc[j*maxInd+i];
                     aj[i*sizeX + j] = ajc[j*maxInd+i];
                     ic[i*sizeX + j] = icc[j*maxInd+i];
-                    vecX[j] = denseVector[j];
+                    vecX[j] = denseVectorX[j];
+                    vecB[j] = denseVectorB[j];
                 }
             }
             free(acrc);
@@ -553,57 +573,6 @@ void spmv_mpi(SGP *matrix, double * denseVector, int sizeDenseVector, double ** 
             free(ajc);
             free(icc);
             free(jcc);
-        
-            /* if(MNL1 == sizeDenseVector){
-                for(long int i = 0; i < MNL1; i++){
-                    (*result)[i] = 0;
-                }
-                //Send data to processus
-                long int * indexProcessus;
-                indexProcessus = (long int *)malloc(sizeof(long int)*p);
-                long int actualProcessus = 0;
-                long int lastInd = 0;
-                for(long int i = 1; i < MNL1+1; i++){
-                    actualProcessus++;
-                    if(actualProcessus >= p){
-                        actualProcessus = p;
-                        break;
-                    }
-                    i = min(MNL1 - 1, (long)(lastInd + ceil(1.0*MNL1/p)));
-                    long int sizeData = i-lastInd;
-                    MPI_Send(&sizeData, 1, MPI_LONG, actualProcessus, TAGSIZE, MPI_COMM_WORLD);
-                    indexProcessus[actualProcessus] = lastInd;
-                    MPI_Send(&indCol[lastInd*rowSize], (i-lastInd)*rowSize, MPI_LONG, actualProcessus, TAGIND, MPI_COMM_WORLD);
-                    MPI_Send(&val[lastInd*rowSize], (i-lastInd)*rowSize, MPI_DOUBLE, actualProcessus, TAGVAL, MPI_COMM_WORLD);
-                    //cout << "Envoie de " << sizeData << " à " << actualProcessus << " (indexProcessus = " << indexProcessus[actualProcessus] << ") length = "<< ptr[i]- ptr[lastInd] << endl;
-                    lastInd = i;
-                }
-                if(actualProcessus >= p){
-                    for(int i = lastInd-1; i < MNL1; i++){
-                        for(int j = 0; j < rowSize; j++){
-                            if(indCol[j+i*rowSize] != -1){
-                                (*result)[i] += denseVector[indCol[j+i*rowSize]] * val[j+i*rowSize];
-                            }
-                            
-                            //result[i] +=  denseVector[ind[j+ptr[i]-1]] * val[j+ptr[i]-1];
-                            //result[i] +=  val[i*maxColInd + j] * denseVector[colInd[i* maxColInd + j]];
-                        }
-                    }
-                    actualProcessus = actualProcessus - 1;
-                }else{
-                    long int sizeData = -1;
-                    for(int i = actualProcessus+1; i<p; i++){
-                        MPI_Send(&sizeData, 1, MPI_LONG, i, TAGSIZE, MPI_COMM_WORLD);
-                    }
-                }
-                int length = 0;
-                for(long int i = 0; i < actualProcessus; i++){
-                    MPI_Recv(&length, 1, MPI_LONG, MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &status);
-                    MPI_Recv(&((*result)[indexProcessus[status.MPI_SOURCE]]), length, MPI_DOUBLE, status.MPI_SOURCE, tag, MPI_COMM_WORLD, &status);
-                }
-                MPI_Barrier(MPI_COMM_WORLD);
-                MPI_Bcast(*result, MNL1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-            } */
         }else{
             my_x = xGrid * (my_rank % ((int)(ceil(1.0*MNL1/xGrid))));
             my_y = 1.0 *yGrid*floor((my_rank*1.0/ceil(MNL1*1.0/xGrid)));
@@ -630,9 +599,11 @@ void spmv_mpi(SGP *matrix, double * denseVector, int sizeDenseVector, double ** 
                 MPI_Recv(&acc[i], 1, MPI_DOUBLE, 0, TAGACC, MPI_COMM_WORLD, &status);
             }
             vecX = (double *)malloc(sizeof(double) * sizeX);
+            vecB = (double *)malloc(sizeof(double) * sizeX);
             if(sizeX * sizeY != 0){
                 for(int i = 0; i < sizeX; i++){
                     MPI_Recv(&vecX[i], 1, MPI_DOUBLE, 0, i, MPI_COMM_WORLD, &status);
+                    MPI_Recv(&vecB[i], 1, MPI_DOUBLE, 0, i*2, MPI_COMM_WORLD, &status);
                 }
             }
             /* cout << my_rank << "ACC : ";
@@ -647,7 +618,7 @@ void spmv_mpi(SGP *matrix, double * denseVector, int sizeDenseVector, double ** 
             cout << endl; */
                 
         }
-        MPI_Barrier(MPI_COMM_WORLD); 
+        //MPI_Barrier(MPI_COMM_WORLD); 
         //cout << "Tous le monde est là" << endl;
         double * t = (double *)malloc(sizeof(double) * sizeX * sizeY);
         double * tres = (double *)malloc(sizeof(double) * sizeX * sizeY);
@@ -669,10 +640,7 @@ void spmv_mpi(SGP *matrix, double * denseVector, int sizeDenseVector, double ** 
                     //cout << my_rank << " ENVOI A " << floor(jc[i*sizeX + j]/yGrid) * (1.0*MNL1/xGrid) + floor(ai[i*sizeX + j]/xGrid) << " (" <<  nombre << ")" << endl;
                 }
             }
-        }
-        MPI_Barrier(MPI_COMM_WORLD); 
-        cout << "Tous le monde est là2" << endl;
-        
+        }        
         for(int i = 0; i < sizeY; i++){
             for(int j = 0; j < sizeX; j++){
                 if(aj[i*sizeX+j] != -1){
@@ -688,35 +656,8 @@ void spmv_mpi(SGP *matrix, double * denseVector, int sizeDenseVector, double ** 
                 }
             }
         }
-        /* for(int i = 0; i < sizeY; i++){
-            for(int j = 0; j < sizeX; j++){
-                if(ai[i*sizeX+j] != -1){
-                    //t[i*sizeX + j] += vecX[my_x+j] * acr[i*sizeX + j];
-                    t[i*sizeX + j] += vecX[j] * acr[i*sizeX + j];
-                    
-                    cout << "T = " << t[i*sizeX+j] << endl;
-                    //cout << my_rank << " : (i " << i << " j "<< j << ") rank " << floor(jc[i*sizeX + j]/yGrid) * (MNL1/xGrid) + floor(ai[i*sizeX + j]/xGrid) << " Jc : " << jc[i*sizeX + j] << " ai : " << ai[i*sizeX+j] <<endl; 
-                    MPI_Isend(&t[i*sizeX + j], 1, MPI_DOUBLE, floor(jc[i*sizeX + j]/yGrid) * (MNL1/xGrid) + floor(ai[i*sizeX + j]/xGrid), TAGEXCHANGE, MPI_COMM_WORLD, &request);
-                    cout << my_rank << " ENVOI A " << floor(jc[i*sizeX + j]/yGrid) * (1.0*MNL1/xGrid) + floor(ai[i*sizeX + j]/xGrid) << endl;
-                }
-            }
-        }
-        MPI_Barrier(MPI_COMM_WORLD); 
-        cout << "Tous le monde est là2" << endl;
         
-        for(int i = 0; i < sizeY; i++){
-            for(int j = 0; j < sizeX; j++){
-                if(aj[i*sizeX+j] != -1){
-                    double recep;
-                    cout << my_rank << " ATTEND " << floor(ic[i*sizeX + j]/yGrid) * (MNL1/xGrid) + floor(aj[i*sizeX + j]/xGrid)<< endl;
-                    cout << my_rank << " : rank : " << floor(ic[i*sizeX + j]/yGrid) * (MNL1/xGrid) + floor(aj[i*sizeX + j]/xGrid) << " ic " << ic[i*sizeX+j] << " aj " << aj[i*sizeX + j] << endl;
-                    MPI_Recv(&tres[i*sizeX+j], 1, MPI_DOUBLE, floor(ic[i*sizeX + j]/yGrid) * (MNL1/xGrid) + floor(aj[i*sizeX + j]/xGrid), TAGEXCHANGE, MPI_COMM_WORLD, &status);
-                    cout << "reception de "<< floor(ic[i*sizeX + j]/yGrid) * (MNL1/xGrid) + floor(aj[i*sizeX + j]/xGrid) << " par " << my_rank << endl;
-                }
-            }
-        } */
-        MPI_Barrier(MPI_COMM_WORLD);
-        cout << "Tous le monde est là3" << endl;
+        //MPI_Barrier(MPI_COMM_WORLD);
         free(t);
         if(my_y == 0){
 
@@ -739,6 +680,9 @@ void spmv_mpi(SGP *matrix, double * denseVector, int sizeDenseVector, double ** 
                 }
             }
             free(r);
+            for(int i = 0; i < sizeX; i++){
+                tres[i] += vecB[i];
+            }
             for(int i = 1; i < ceil(maxInd*1.0/yGrid); i++){
                 MPI_Send(tres, sizeX, MPI_DOUBLE, my_x + i*ceil(MNL1/sizeX), TAGSPREAD, MPI_COMM_WORLD);
             }
@@ -765,7 +709,7 @@ void spmv_mpi(SGP *matrix, double * denseVector, int sizeDenseVector, double ** 
                 }
             }
         }
-        MPI_Barrier(MPI_COMM_WORLD);
+        //MPI_Barrier(MPI_COMM_WORLD);
         //Spread all the result vector to all processus
         *result = (double *)malloc(sizeof(double)*MNL1);
         if(my_rank == 0){
@@ -786,11 +730,12 @@ void spmv_mpi(SGP *matrix, double * denseVector, int sizeDenseVector, double ** 
                 MPI_Send(tres, sizeX, MPI_DOUBLE, 0, TAGGET, MPI_COMM_WORLD);
             }
         }
-        MPI_Barrier(MPI_COMM_WORLD);
+        free(vecX);
+        free(vecB);
         MPI_Bcast(*result, MNL1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     }else{
         if(my_rank == 0){
-            cout << "the vector is not of the right size (size = "<< sizeDenseVector << " MNL = "<< MNL1<< ")" << endl;
+            cout << "the vector is not of the right size (size = "<< sizeVector << " MNL = "<< MNL1<< ")" << endl;
         }
     }
 

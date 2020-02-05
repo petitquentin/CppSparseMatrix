@@ -12,17 +12,28 @@
 using namespace std;
     
 int main(int argc, char** argv){
+
+    int my_rank, p;
     int size = 5;
-    double * result = (double *)malloc(sizeof(double) * size);
+    MPI_Init(&argc, &argv);
+
+    MPI_Status status;
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &p);
+    double * result = NULL;
+    if(my_rank == 0){
+        cout << "JE PASSE LA " << my_rank << endl;
+        result = (double *)malloc(sizeof(double) * size);
+        result[0] = 1;
+        result[1] = 2;
+        result[2] = 3;
+        result[3] = 4;
+        result[4] = 5;
+    }
     double * result1 = NULL;
     double * result2 = NULL;
-    int my_rank, p;
     cout << sizeof(p) << endl;
-    result[0] = 1;
-    result[1] = 2;
-    result[2] = 3;
-    result[3] = 4;
-    result[4] = 5;
+    
 
     double * vec = (double *)malloc(sizeof(double) * 8);
     for(int i = 0; i < 8; i++){
@@ -33,18 +44,15 @@ int main(int argc, char** argv){
     COO myMatrix3;
     myMatrix3.initialize("data/test2.mtx");
     //myMatrix3.print();
-    myMatrix3.spmv(result, size, &result1);
-    cout << "result :" << endl;
+    //myMatrix3.spmv(result, size, &result1);
+    MPI_Barrier(MPI_COMM_WORLD);
+    /* cout << "result :" << endl;
     for(int i = 0; i < size; i++){
         cout << result1[i] << ' ';
     }
-    cout << endl;
+    cout << endl; */
 
-    MPI_Init(&argc, &argv);
-
-    MPI_Status status;
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &p);
+    
     
     spmv_mpi(&myMatrix3, result, size, &result2);
 
@@ -77,12 +85,12 @@ int main(int argc, char** argv){
     cout << "____ELL____" <<endl;
     ELL myMatrix2;
     myMatrix2.initialize("data/test3.mtx");
-    myMatrix2.spmv(result, size, &result2);
-    cout << "result :" << endl;
+    //myMatrix2.spmv(result, size, &result2);
+    /* cout << "result :" << endl;
     for(int i = 0; i < size; i++){
         cout << result2[i] << ' ';
     }
-    cout << endl;
+    cout << endl; */
 
     free(result2);
     result2 = NULL;

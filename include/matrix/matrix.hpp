@@ -103,4 +103,9 @@ void spmv_mpi(CSR *matrix, double * denseVector, int sizeDenseVector, double ** 
 void spmv_mpi(ELL *matrix, double * denseVector, int sizeDenseVector, double ** result);
 void spmv_mpi(SGP *matrix, double * denseVector, int sizeDenseVector, double ** result);
 
+void spmvs_mpi(COO *matrix, double * denseVectorX, double * denseVectorB,  int sizeVector, double ** result);
+void spmvs_mpi(CSR *matrix, double * denseVectorX, double * denseVectorB,  int sizeVector, double ** result);
+void spmvs_mpi(ELL *matrix, double * denseVectorX, double * denseVectorB,  int sizeVector, double ** result);
+void spmvs_mpi(SGP *matrix, double * denseVectorX, double * denseVectorB,  int sizeVector, double ** result);
+
 #endif

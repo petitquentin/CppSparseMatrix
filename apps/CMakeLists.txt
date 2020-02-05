@@ -32,3 +32,12 @@ target_include_directories(testmpi2 PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_include_directories(testmpi2 PUBLIC data)
 install(TARGETS testmpi2 DESTINATION bin)
 
+add_executable(testmpis testMPI2s.cpp)
+target_compile_features(testmpis PRIVATE cxx_std_17)
+
+target_link_libraries(testmpis PUBLIC MPI::MPI_CXX)
+target_link_libraries(testmpis PRIVATE matrix_library)
+target_include_directories(testmpis PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(testmpis PUBLIC data)
+install(TARGETS testmpis DESTINATION bin)
+
