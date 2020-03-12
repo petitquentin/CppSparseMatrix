@@ -22,7 +22,8 @@ double my_gettimeofday(){
 }
 
 int main(int argc, char** argv){
-    int size = 10000;
+    int size = 217918;
+    string file = "data/pwtk.mtx";
     double start;
     int elapsed_seconds;
     double * result = NULL;
@@ -31,18 +32,20 @@ int main(int argc, char** argv){
     int my_rank, p;
     MPI_Init(&argc, &argv);
 
+    cout << file << endl;
+
     MPI_Status status;
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &p);
     if(my_rank == 0){
         result = (double *)malloc(sizeof(double) * size);
         for(int i = 0; i < size; i++){
-            result[i] = i/100.0;
+            result[i] = i/(1000/3.0);
         }
     }
     cout << "COO" << endl; 
     COO myMatrix3;
-    myMatrix3.initialize("data/smg2s10000.mtx");
+    myMatrix3.initialize(file);
     
 
     
@@ -56,6 +59,7 @@ int main(int argc, char** argv){
     if(my_rank == 0){
         cout << "TEMPS COO : " <<  my_gettimeofday() - start << endl;
     }
+    MPI_Barrier(MPI_COMM_WORLD);
 
     cout << "result_MPI :" << endl;
     for(int i = 0; i < 10; i++){
@@ -69,7 +73,7 @@ int main(int argc, char** argv){
     MPI_Barrier(MPI_COMM_WORLD);
     cout << "____CSR____" <<endl;
     CSR myMatrix;
-    myMatrix.initialize("data/smg2s10000.mtx");
+    myMatrix.initialize(file);
 
     MPI_Barrier(MPI_COMM_WORLD);
     if(my_rank == 0){
@@ -93,7 +97,7 @@ int main(int argc, char** argv){
     MPI_Barrier(MPI_COMM_WORLD);
     cout << "____ELL____" <<endl;
     ELL myMatrix2;
-    myMatrix2.initialize("data/smg2s10000.mtx");
+    myMatrix2.initialize(file);
 
     free(result2);
     result2 = NULL;
@@ -120,7 +124,7 @@ int main(int argc, char** argv){
     cout << "____SGP____" <<endl;
     SGP myMatrix1;
     if(my_rank == 0){
-        myMatrix1.initialize("data/smg2s10000.mtx");
+        myMatrix1.initialize(file);
         //myMatrix1.data();
     }
     

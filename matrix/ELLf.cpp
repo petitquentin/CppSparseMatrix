@@ -11,7 +11,7 @@
 using namespace std;
 
 
-void ELL::initialize(string path){
+void ELLf::initialize(string path){
     vector<double> values;
     vector<long int> row;
     vector<long int> col;
@@ -34,36 +34,18 @@ void ELL::initialize(string path){
             maxInd = maxIndTab[j];
         }
     }
-    /* for (int i = 1; i <= MNL[0]; i++){
-        nbValuesInLine = 0;
-        cout << i <<endl;
-        for(int j = 0; j <= MNL[2]; j++){
-            if(row[j] == i){
-                nbValuesInLine++;
-            }
-        }
-        if(nbValuesInLine > maxInd){
-            maxInd = nbValuesInLine;
-        }
-    } */
     maxColInd = maxInd;
-    /* if(maxIndTab != NULL){
-        free(maxIndTab);
-
-    } */
 
     //Initialization of colInd 
     vector<long int> initialization;
     if(colInd != NULL){
         free(colInd);
-        colInd = NULL;
     }
     if(val != NULL){
         free(val);
-        val = NULL;
     }
     colInd = (long int *)malloc(sizeof(long int) * maxInd * MNL[0]);
-    val = (double *)malloc(sizeof(double) * maxInd * MNL[0]);
+    val = (float *)malloc(sizeof(float) * maxInd * MNL[0]);
     for(int i = 0; i < MNL[0]; i++){
         for(int j = 0; j < maxInd; j++){
             colInd[i*maxInd+j] = -1;
@@ -74,7 +56,7 @@ void ELL::initialize(string path){
 
     for(int i = 0; i< MNL[2]; i ++){
         colInd[row[i]*maxInd+initialization[row[i]]] = col[i];
-        val[row[i]*maxInd+initialization[row[i]]] = values[i];
+        val[row[i]*maxInd+initialization[row[i]]] = ((float)(values[i]));
         initialization[row[i]] = initialization[row[i]] + 1; 
     }
     /* cout << "ColInd : " << endl;
@@ -94,8 +76,8 @@ void ELL::initialize(string path){
     } */
 };
 
-void ELL::print(){
-    typedef vector<double> RowDouble;
+void ELLf::print(){
+    typedef vector<float> RowDouble;
     RowDouble row(MNL[1]);
     for(int i = 0; i < MNL[0]; i ++){
         for(int j = 0; j < MNL[1]; j++){
@@ -115,7 +97,7 @@ void ELL::print(){
     cout << endl;
 };
 
-void ELL::spmv(double * denseVector, int sizeDenseVector, double ** result){
+void ELLf::spmv(double * denseVector, int sizeDenseVector, double ** result){
     if(*result != NULL){
         *result = (double *)realloc(*result, sizeDenseVector * sizeof(double));
     }else{
@@ -133,7 +115,7 @@ void ELL::spmv(double * denseVector, int sizeDenseVector, double ** result){
         for(long int i = 0; i < MNL[0]; i++){
             for(long int j = 0; j < maxColInd; j++){
                 if(colInd[i*maxColInd + j] != -1){
-                    (*result)[i] +=  val[i*maxColInd + j] * denseVector[(int) (colInd[i* maxColInd + j])];
+                    (*result)[i] +=  ((double)(val[i*maxColInd + j])) * denseVector[(int) (colInd[i* maxColInd + j])];
                     //result[i] +=  val[i][j] * denseVector[colInd[i][j]];
                 }
             }
@@ -141,7 +123,7 @@ void ELL::spmv(double * denseVector, int sizeDenseVector, double ** result){
     }
 }
 
-void ELL::spmv(float * denseVector, int sizeDenseVector, double ** result){
+void ELLf::spmv(float * denseVector, int sizeDenseVector, double ** result){
     if(*result != NULL){
         *result = (double *)realloc(*result, sizeDenseVector * sizeof(double));
     }else{
@@ -159,7 +141,7 @@ void ELL::spmv(float * denseVector, int sizeDenseVector, double ** result){
         for(long int i = 0; i < MNL[0]; i++){
             for(long int j = 0; j < maxColInd; j++){
                 if(colInd[i*maxColInd + j] != -1){
-                    (*result)[i] +=  val[i*maxColInd + j] * ((double)(denseVector[(int) (colInd[i* maxColInd + j])]));
+                    (*result)[i] +=  ((double)(val[i*maxColInd + j] * (denseVector[(int) (colInd[i* maxColInd + j])])));
                     //result[i] +=  val[i][j] * denseVector[colInd[i][j]];
                 }
             }
@@ -167,8 +149,54 @@ void ELL::spmv(float * denseVector, int sizeDenseVector, double ** result){
     }
 }
 
-double ELL::norm(){
-    double norm = 0;
+void ELLf::spmv(float * denseVector, int sizeDenseVector, float ** result){
+    if(*result != NULL){
+        *result = (float *)realloc(*result, sizeDenseVector * sizeof(float));
+    }else{
+        *result = (float *)malloc(sizeof(float) * sizeDenseVector);
+    }
+    if(MNL[1] != sizeDenseVector){
+        for(int i = 0; i < sizeDenseVector; i++){
+            (*result)[i] = NULL;
+        }
+        cout << "the vector is not of the right size" << endl;
+    }else{
+        for(long int i = 0; i < sizeDenseVector; i++){
+            (*result)[i] = 0;
+        }
+        for(long int i = 0; i < MNL[0]; i++){
+            for(long int j = 0; j < maxColInd; j++){
+                if(colInd[i*maxColInd + j] != -1){
+                    (*result)[i] +=  val[i*maxColInd + j] * (denseVector[(int) (colInd[i* maxColInd + j])]);
+                    //result[i] +=  val[i][j] * denseVector[colInd[i][j]];
+                }
+            }
+        }
+    }
+}
+
+long int ELLf::sizeColInd(int num){
+    if(num == 0){
+        return MNL[0];
+    }else {
+        if(num == 1){
+            return maxColInd;
+        }else{
+            return -1;
+        }
+    }
+}
+
+float * ELLf::getVal(){
+    return val;
+}
+
+long int * ELLf::getColInd(){
+    return colInd;
+}
+
+float ELLf::norm(){
+    float norm = 0;
 
     for(long int i = 0; i < MNL[0]; i++){
         for(long int j = 0; j < maxColInd; j++){
@@ -181,26 +209,8 @@ double ELL::norm(){
     return norm;
 }
 
-long int ELL::sizeColInd(int num){
-    if(num == 0){
-        return MNL[0];
-    }else {
-        if(num == 1){
-            return maxColInd;
-        }else{
-            return -1;
-        }
-    }
-}
 
-double * ELL::getVal(){
-    return val;
-}
-
-long int * ELL::getColInd(){
-    return colInd;
-}
-void ELL::freeData(){
+void ELLf::freeData(){
     if(colInd != NULL){
         free(colInd);
         colInd = NULL;
@@ -210,9 +220,6 @@ void ELL::freeData(){
         val = NULL;
     }
 }
-
-
-
 /* vector<double> ELL::spmv_mpi(vector<double> denseVector){
     int my_rank;
     int p;

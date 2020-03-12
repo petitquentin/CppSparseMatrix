@@ -17,7 +17,7 @@ void SGP::initialize(string path){
 
     read_mtx_file(path, values, row, col);
     
-    int nbValuesRow;
+    /* int nbValuesRow;
     int nbValuesCol;
     for (int i = 1; i <= MNL[0]; i++){
         nbValuesRow = 0;
@@ -35,6 +35,27 @@ void SGP::initialize(string path){
         }
         if(nbValuesCol > maxInd){
             maxInd = nbValuesCol;
+        }
+    } */
+
+    maxInd = 0;
+    int nbValuesInLine;
+    int maxIndTab[MNL[0]];
+    int maxColTab[MNL[1]];
+    for(int j = 0; j <MNL[0]; j++){
+        maxIndTab[j] = 0;
+        maxColTab[j] = 0;
+    }
+    for(int j = 0; j <MNL[2]; j++){
+        maxIndTab[row[j] - 1]++;
+        maxColTab[col[j] - 1]++;
+    }
+    for(int j = 0; j <MNL[0]; j++){
+        if(maxIndTab[j] > maxInd){
+            maxInd = maxIndTab[j];
+        }
+        if(maxColTab[j] > maxInd){
+            maxInd = maxColTab[j];
         }
     }
     
@@ -263,6 +284,32 @@ void SGP::spmv(double * denseVector, int sizeDenseVector, double ** result){
     } */
 }
 
+void SGP::spmv(float * denseVector, int sizeDenseVector, double ** result){
+    if(*result != NULL){
+        *result = (double *)realloc(*result, sizeDenseVector * sizeof(double));
+    }else{
+        *result = (double *)malloc(sizeof(double) * sizeDenseVector);
+    }
+    if(MNL[1] != sizeDenseVector){
+        for(int i = 0; i < sizeDenseVector; i++){
+            (*result)[i] = 0;
+        }
+        cout << "the vector is not of the right size" << endl;
+    }else{
+        for(long int i = 0; i < sizeDenseVector; i ++){
+            (*result)[i] = 0;
+        }
+
+        for(long int i = 0; i < MNL[0]; i++){
+            for(long int j = 0; j < maxInd; j++){
+                if(aj[i * maxInd + j] != -1){
+                    (*result)[i] += acc[i * maxInd + j] * ((double)(denseVector[aj[i * maxInd + j]]));
+                }
+            }
+        }
+    }
+}
+
 long int SGP::getMaxInd(){
     return maxInd;
 }
@@ -285,4 +332,18 @@ double * SGP::getAcc(){
 }
 double * SGP::getAcr(){
     return acr;
+}
+
+double SGP::norm(){
+    double norm = 0;
+
+    for(long int i = 0; i < MNL[0]; i++){
+        for(long int j = 0; j < maxInd; j++){
+            if(aj[i * maxInd + j] != -1){
+                norm += acc[i * maxInd + j];
+            }
+
+        }
+    }
+    return norm;
 }

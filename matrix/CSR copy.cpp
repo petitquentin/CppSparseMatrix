@@ -19,34 +19,25 @@ void CSR::initialize(string path){
     read_mtx_file(path, values, row, col);
 
     //Initialize ptr
-    if(ptr != NULL){
-        free(ptr);
-    }
-    if(val != NULL){
-        free(val);
-    }
-    if(ind != NULL){
-        free(ind);
-    }
+    ptr.clear();
+    val.clear();
+    ind.clear();
 
-    ptr = (long int *)malloc(sizeof(long int) * MNL[0]+1);
-    ind = (long int *)malloc(sizeof(long int) * MNL[2]);
-    val = (double *)malloc(sizeof(double) * MNL[2]);
-    
-    for(long int i = 0; i < MNL[0]+1; i++){
-        ptr[i] = 0;
+    ptr.push_back(0);
+    for(long int i = 0; i < MNL[0]; i++){
+        ptr.push_back(0);
     }
     for(long int n = 0; n < MNL[2]; n++){
         ptr[row[n]]++;
-        val[n] = 0;
-        ind[n] = 0;
+        val.push_back(0);
+        ind.push_back(0);
     }
     for(long int i = 0, cumsum = 0; i< MNL[0]; i++){
         long int temp = ptr[i];
         ptr[i] = cumsum;
         cumsum += temp;
     }
-    ptr[MNL[0]] = MNL[2];
+    ptr[ptr.size()-1] = MNL[2];
 
     for(long int n = 0; n < MNL[2]; n++){
         long int r = row[n];
@@ -68,19 +59,16 @@ void CSR::initialize(string path){
 
 void CSR::print(){
     long int c = 0;
-    for(long int i = 1; i < MNL[0]+1; i++){
+    for(long int i = 1; i < ptr.size(); i++){
         long int start = ptr[i-1];
         long int end = ptr[i];
-        for(int j = 0; j < MNL[1]; j++){
-            int it = 0;
-            for(int k = start; k < end; k++){
-                if(ind[k] == j){
-                    it++;
-                }
-            }
-            if(it == 0){
+        vector<long int>::const_iterator first = ind.begin() + start;
+        vector<long int>::const_iterator last = ind.begin() + end;
+        vector<long int> row(first,last);
+        for(int j = 0; j < ptr.size(); j++){
+            if(count(row.begin(), row.end(), j) == 0)
                 cout << '0' << ' ';
-            }else{
+            else{
                 cout << val[c] << '(' << c << ')' << ' ';
                 c++;
             }
@@ -91,119 +79,72 @@ void CSR::print(){
     }
     //print ind
     cout << "print ind" << endl;
-    for(int i = 0; i < MNL[2]; i++){
+    for(int i = 0; i < ind.size(); i++){
         cout << ind[i] << ' ';
     }
     cout << endl;
     //print val
     cout << "print val" << endl;
-    for(int i = 0; i < MNL[2]; i++){
+    for(int i = 0; i < val.size(); i++){
         cout << val[i] << ' ';
     }
     cout << endl;
     //print ptr
     cout << "print ptr" << endl;
-    for(int i = 0; i < MNL[0] + 1; i++){
+    for(int i = 0; i < ptr.size(); i++){
         cout << ptr[i] << ' ';
     }
     cout << endl;
+    cout << endl;
+    cout << val.size() << ' ' << ind.size() << ' ' << ptr.size() << ' ' << ptr[ptr.size()-1] << ' ' << endl;
 };
 
 
-void CSR::spmv(double * denseVector, int sizeDenseVector, double ** result){
-    if(*result != NULL){
-        *result = (double *)realloc(*result, sizeDenseVector * sizeof(double));
-    }else{
-        *result = (double *)malloc(sizeof(double) * sizeDenseVector);
-    }
-    if(MNL[1] != sizeDenseVector){
-        for(int i = 0; i < sizeDenseVector; i++){
-            (*result)[i] = NULL;
+vector<double> CSR::spmv(vector<double> denseVector){
+    typedef vector<double> RowDouble;
+    RowDouble result(MNL[1]);
+    if(MNL[1] != denseVector.size()){
+        for(int i = 0; i < result.size(); i++){
+            result[i] = NULL;
         }
         cout << "the vector is not of the right size" << endl;
-    }else{
-        for(int i = 0; i < sizeDenseVector; i++){
-            (*result)[i] = 0;
-        }
-        for(long int i = 0; i < MNL[0]; i++){
-            long int start = ptr[i];
-            long int end = ptr[i+1];
-            for(int j = start; j < end; j++){
-                (*result)[i] += denseVector[ind[j]] * val[j]; 
-            }
+        return result;
+    }
+    for(int i = 0; i < result.size(); i++){
+        result[i] = 0;
+    }
+    for(long int i = 0; i < ptr.size()-1; i++){
+        long int start = ptr[i];
+        long int end = ptr[i+1];
+        vector<long int>::const_iterator firstInd= ind.begin() + start;
+        vector<long int>::const_iterator lastInd = ind.begin() + end;
+        vector<double>::const_iterator firstVal = val.begin() + start;
+        vector<double>::const_iterator lastVal = val.begin() + end;
+        vector<long int> rowInd(firstInd,lastInd);
+        vector<long int> rowVal(firstVal, lastVal);
+        for(int j = 0; j < rowInd.size(); j++){
+            result[i] += denseVector[rowInd[j]] * rowVal[j]; 
         }
     }
     
     /* for(long int i = 0; i < ptr.size(); i++){
         result[i] += denseVector[ind[i]] * val[i];
     } */
-}
-
-void CSR::spmv(float * denseVector, int sizeDenseVector, double ** result){
-    if(*result != NULL){
-        *result = (double *)realloc(*result, sizeDenseVector * sizeof(double));
-    }else{
-        *result = (double *)malloc(sizeof(double) * sizeDenseVector);
-    }
-    if(MNL[1] != sizeDenseVector){
-        for(int i = 0; i < sizeDenseVector; i++){
-            (*result)[i] = NULL;
-        }
-        cout << "the vector is not of the right size" << endl;
-    }else{
-        for(int i = 0; i < sizeDenseVector; i++){
-            (*result)[i] = 0;
-        }
-        for(long int i = 0; i < MNL[0]; i++){
-            long int start = ptr[i];
-            long int end = ptr[i+1];
-            for(int j = start; j < end; j++){
-                (*result)[i] += ((double)(denseVector[ind[j]])) * val[j]; 
-            }
-        }
-    }
-    
-    /* for(long int i = 0; i < ptr.size(); i++){
-        result[i] += denseVector[ind[i]] * val[i];
-    } */
-}
-
-double CSR::norm(){
-    double norm = 0;
-
-    for(long int i = 0; i < MNL[2]; i++){
-        norm += val[i];    
-    }
-    return norm;
+    return result;
 }
 
 int CSR::getValSize(){
-    return MNL[2];
+    return val.size();
 }
 long int * CSR::getPtr(){
-    return ptr;
+    return ptr.data();
 }
 long int * CSR::getInd(){
-    return ind;
+    return ind.data();
 }
 
 double * CSR::getVal(){
-    return val;
-}
-
-void CSR::freeData(){
-    if(val != NULL){
-        free(val);
-        val = NULL;
-    }
-    if(ind != NULL){
-        free(ind);
-        ind = NULL;
-    }
-    if(ptr != NULL){
-        free(ptr);
-        ptr = NULL;
-    }
+    return val.data();
 }
 
 

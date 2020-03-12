@@ -22,32 +22,27 @@ double my_gettimeofday(){
 }
 
 int main(int argc, char** argv){
-    cout << "ARGV" << string(argv[0]) << endl;
-    string file = "data/mc2depi.mtx";
-    int size = 525825;
+    int size = 10000;
     double start;
     int elapsed_seconds;
-    double * result = NULL;
-    double * resultB = NULL;
+    float * result = NULL;
     double * result1 = NULL;
     double * result2 = NULL;
     int my_rank, p;
-
     MPI_Init(&argc, &argv);
+
     MPI_Status status;
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &p);
     if(my_rank == 0){
-        result = (double *)malloc(sizeof(double) * size);
-        resultB = (double *)malloc(sizeof(double) * size);
+        result = (float *)malloc(sizeof(float) * size);
         for(int i = 0; i < size; i++){
-            result[i] = i/100.0;
-            resultB[i] = i;
+            result[i] = i/(1000/3.0);
         }
     }
     cout << "COO" << endl; 
     COO myMatrix3;
-    myMatrix3.initialize(file);
+    myMatrix3.initialize("data/smg2s10000.mtx");
     
 
     
@@ -56,7 +51,7 @@ int main(int argc, char** argv){
     if(my_rank == 0){
         start = my_gettimeofday();
     }
-    spmvs_mpi(&myMatrix3, result, resultB, size, &result2);
+    spmv_mpi(&myMatrix3, result, size, &result2);
     MPI_Barrier(MPI_COMM_WORLD);
     if(my_rank == 0){
         cout << "TEMPS COO : " <<  my_gettimeofday() - start << endl;
@@ -74,15 +69,13 @@ int main(int argc, char** argv){
     MPI_Barrier(MPI_COMM_WORLD);
     cout << "____CSR____" <<endl;
     CSR myMatrix;
-    myMatrix.initialize(file);
+    myMatrix.initialize("data/smg2s10000.mtx");
 
     MPI_Barrier(MPI_COMM_WORLD);
-    cout << "  GO CSR" << endl;
     if(my_rank == 0){
         start = my_gettimeofday();
     }
-    spmvs_mpi(&myMatrix, result, resultB, size, &result2);
-    cout << my_rank << "G FINI CSR" << endl;
+    spmv_mpi(&myMatrix, result, size, &result2);
     MPI_Barrier(MPI_COMM_WORLD);
     if(my_rank == 0){
         cout << "TEMPS CSR : " << my_gettimeofday() - start << endl;
@@ -100,7 +93,7 @@ int main(int argc, char** argv){
     MPI_Barrier(MPI_COMM_WORLD);
     cout << "____ELL____" <<endl;
     ELL myMatrix2;
-    myMatrix2.initialize(file);
+    myMatrix2.initialize("data/smg2s10000.mtx");
 
     free(result2);
     result2 = NULL;
@@ -109,7 +102,7 @@ int main(int argc, char** argv){
     if(my_rank == 0){
         start = my_gettimeofday();
     }
-    spmvs_mpi(&myMatrix2, result, resultB, size, &result2);
+    spmv_mpi(&myMatrix2, result, size, &result2);
     MPI_Barrier(MPI_COMM_WORLD);
     if(my_rank == 0){
         cout << "TEMPS ELL : " << my_gettimeofday() - start << endl;
@@ -127,7 +120,7 @@ int main(int argc, char** argv){
     cout << "____SGP____" <<endl;
     SGP myMatrix1;
     if(my_rank == 0){
-        myMatrix1.initialize(file);
+        myMatrix1.initialize("data/smg2s10000.mtx");
         //myMatrix1.data();
     }
     
@@ -138,7 +131,7 @@ int main(int argc, char** argv){
     if(my_rank == 0){
         start = my_gettimeofday();
     }
-    spmvs_mpi(&myMatrix1, result, resultB, size, &result2);
+    spmv_mpi(&myMatrix1, result, size, &result2);
     MPI_Barrier(MPI_COMM_WORLD);
     if(my_rank == 0){
         cout << "TEMPS SGP : " << my_gettimeofday() - start << endl;

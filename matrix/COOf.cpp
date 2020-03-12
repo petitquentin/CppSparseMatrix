@@ -10,7 +10,7 @@
 
 using namespace std;
 
-void COO::initialize(string path)
+void COOf::initialize(string path)
 {
     if(val != NULL){
         free(val);
@@ -32,14 +32,16 @@ void COO::initialize(string path)
     read_mtx_file(path, values, rowInit, colInit);
 
     
-    val = (double *)malloc(sizeof(double) * MNL[2]);
+    val = (float *)malloc(sizeof(float) * MNL[2]);
     col = (long int *)malloc(sizeof(long int) * MNL[2]);
     row = (long int *)malloc(sizeof(long int) * MNL[2]);
 
     //val = values.data();
     //col = colInit.data();
     //row = rowInit.data();
-    copy(values.data(), values.data() + values.size(), val);
+    for(int i = 0; i < MNL[2]; i++){
+        val[i] = ((float)(values[i]));
+    }
     copy(colInit.data(), colInit.data() + colInit.size(), col);
     copy(rowInit.data(), rowInit.data() + rowInit.size(), row);
     
@@ -63,8 +65,8 @@ void COO::initialize(string path)
     cout << endl; */
 };
 
-void COO::print(){
-    typedef vector<double> RowDouble;
+void COOf::print(){
+    typedef vector<float> RowDouble;
     RowDouble actualRow(MNL[1]);
     for(int i = 0; i < MNL[0]; i ++){
         for(int j = 0; j < MNL[1]; j++){
@@ -83,11 +85,53 @@ void COO::print(){
     cout << endl;
 };
 
-void COO::spmv(double * denseVector, int sizeDenseVector, double ** result){
+void COOf::spmv(double * denseVector, int sizeDenseVector, double ** result){
     if(*result != NULL){
         *result = (double *)realloc(*result, sizeDenseVector * sizeof(double));
     }else{
         *result = (double *)malloc(sizeof(double) * sizeDenseVector);
+    }
+    if(MNL[1] != sizeDenseVector){
+        for(long int i = 0; i < sizeDenseVector; i++){
+            (*result)[i] = NULL;
+        }
+        cout << "the vector is not of the right size" << endl;
+    }else{
+        for(int i = 0; i < sizeDenseVector; i++){
+            (*result)[i] = 0;
+        }
+        for(int i = 0; i < MNL[2]; i++){
+            (*result)[row[i]] += ((double)(val[i]))*denseVector[col[i]];
+        }
+    }
+}
+
+void COOf::spmv(float * denseVector, int sizeDenseVector, double ** result){
+    if(*result != NULL){
+        *result = (double *)realloc(*result, sizeDenseVector * sizeof(double));
+    }else{
+        *result = (double *)malloc(sizeof(double) * sizeDenseVector);
+    }
+    if(MNL[1] != sizeDenseVector){
+        for(long int i = 0; i < sizeDenseVector; i++){
+            (*result)[i] = NULL;
+        }
+        cout << "the vector is not of the right size" << endl;
+    }else{
+        for(int i = 0; i < sizeDenseVector; i++){
+            (*result)[i] = 0;
+        }
+        for(int i = 0; i < MNL[2]; i++){
+            (*result)[row[i]] += ((double)(val[i]*denseVector[col[i]]));
+        }
+    }
+}
+
+void COOf::spmv(float * denseVector, int sizeDenseVector, float ** result){
+    if(*result != NULL){
+        *result = (float *)realloc(*result, sizeDenseVector * sizeof(float));
+    }else{
+        *result = (float *)malloc(sizeof(float) * sizeDenseVector);
     }
     if(MNL[1] != sizeDenseVector){
         for(long int i = 0; i < sizeDenseVector; i++){
@@ -100,27 +144,6 @@ void COO::spmv(double * denseVector, int sizeDenseVector, double ** result){
         }
         for(int i = 0; i < MNL[2]; i++){
             (*result)[row[i]] += val[i]*denseVector[col[i]];
-        }
-    }
-}
-
-void COO::spmv(float * denseVector, int sizeDenseVector, double ** result){
-    if(*result != NULL){
-        *result = (double *)realloc(*result, sizeDenseVector * sizeof(double));
-    }else{
-        *result = (double *)malloc(sizeof(double) * sizeDenseVector);
-    }
-    if(MNL[1] != sizeDenseVector){
-        for(long int i = 0; i < sizeDenseVector; i++){
-            (*result)[i] = NULL;
-        }
-        cout << "the vector is not of the right size" << endl;
-    }else{
-        for(int i = 0; i < sizeDenseVector; i++){
-            (*result)[i] = 0;
-        }
-        for(int i = 0; i < MNL[2]; i++){
-            (*result)[row[i]] += val[i]*((double)(denseVector[col[i]]));
         }
     }
 }
@@ -145,23 +168,23 @@ void COO::spmv(float * denseVector, int sizeDenseVector, double ** result){
     return result;
 } */
 
-int COO::getRowSize(){
+int COOf::getRowSize(){
     return MNL[2];
 }
 
-long int * COO::getRow(){
+long int * COOf::getRow(){
     return row;
 }
-long int * COO::getCol(){
+long int * COOf::getCol(){
     return col;
 }
 
-double * COO::getVal(){
+float * COOf::getVal(){
     return val;
 }
 
-double COO::norm(){
-    double norm = 0;
+float COOf::norm(){
+    float norm = 0;
 
     for(long int i = 0; i < MNL[2]; i++){
         norm += val[i];
@@ -169,7 +192,7 @@ double COO::norm(){
     return norm;
 }
 
-void COO::freeData(){
+void COOf::freeData(){
     if(val != NULL){
         free(val);
         val = NULL;
@@ -183,8 +206,6 @@ void COO::freeData(){
         row = NULL;
     }
 }
-
-
 
 /* vector<double> COO::spmv_mpi(vector<double> denseVector){
     int my_rank;

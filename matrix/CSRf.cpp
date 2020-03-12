@@ -11,7 +11,7 @@
 using namespace std;
 
 
-void CSR::initialize(string path){
+void CSRf::initialize(string path){
     vector<double> values;
     vector<long int> row;
     vector<long int> col;
@@ -31,7 +31,7 @@ void CSR::initialize(string path){
 
     ptr = (long int *)malloc(sizeof(long int) * MNL[0]+1);
     ind = (long int *)malloc(sizeof(long int) * MNL[2]);
-    val = (double *)malloc(sizeof(double) * MNL[2]);
+    val = (float *)malloc(sizeof(float) * MNL[2]);
     
     for(long int i = 0; i < MNL[0]+1; i++){
         ptr[i] = 0;
@@ -53,7 +53,7 @@ void CSR::initialize(string path){
         long int dest = ptr[r];
         //cout << dest <<endl;
         ind[dest] = col[n];
-        val[dest] = values[n];
+        val[dest] = ((float)(values[n]));
 
         ptr[r]++;
     }
@@ -66,7 +66,7 @@ void CSR::initialize(string path){
 
 };
 
-void CSR::print(){
+void CSRf::print(){
     long int c = 0;
     for(long int i = 1; i < MNL[0]+1; i++){
         long int start = ptr[i-1];
@@ -110,11 +110,69 @@ void CSR::print(){
 };
 
 
-void CSR::spmv(double * denseVector, int sizeDenseVector, double ** result){
+void CSRf::spmv(double * denseVector, int sizeDenseVector, double ** result){
     if(*result != NULL){
         *result = (double *)realloc(*result, sizeDenseVector * sizeof(double));
     }else{
         *result = (double *)malloc(sizeof(double) * sizeDenseVector);
+    }
+    if(MNL[1] != sizeDenseVector){
+        for(int i = 0; i < sizeDenseVector; i++){
+            (*result)[i] = NULL;
+        }
+        cout << "the vector is not of the right size" << endl;
+    }else{
+        for(int i = 0; i < sizeDenseVector; i++){
+            (*result)[i] = 0;
+        }
+        for(long int i = 0; i < MNL[0]; i++){
+            long int start = ptr[i];
+            long int end = ptr[i+1];
+            for(int j = start; j < end; j++){
+                (*result)[i] += denseVector[ind[j]] * ((double)(val[j])); 
+            }
+        }
+    }
+    
+    /* for(long int i = 0; i < ptr.size(); i++){
+        result[i] += denseVector[ind[i]] * val[i];
+    } */
+}
+
+void CSRf::spmv(float * denseVector, int sizeDenseVector, double ** result){
+    if(*result != NULL){
+        *result = (double *)realloc(*result, sizeDenseVector * sizeof(double));
+    }else{
+        *result = (double *)malloc(sizeof(double) * sizeDenseVector);
+    }
+    if(MNL[1] != sizeDenseVector){
+        for(int i = 0; i < sizeDenseVector; i++){
+            (*result)[i] = NULL;
+        }
+        cout << "the vector is not of the right size" << endl;
+    }else{
+        for(int i = 0; i < sizeDenseVector; i++){
+            (*result)[i] = 0;
+        }
+        for(long int i = 0; i < MNL[0]; i++){
+            long int start = ptr[i];
+            long int end = ptr[i+1];
+            for(int j = start; j < end; j++){
+                (*result)[i] += ((double)(denseVector[ind[j]] * val[j])); 
+            }
+        }
+    }
+    
+    /* for(long int i = 0; i < ptr.size(); i++){
+        result[i] += denseVector[ind[i]] * val[i];
+    } */
+}
+
+void CSRf::spmv(float * denseVector, int sizeDenseVector, float ** result){
+    if(*result != NULL){
+        *result = (float *)realloc(*result, sizeDenseVector * sizeof(float));
+    }else{
+        *result = (float *)malloc(sizeof(float) * sizeDenseVector);
     }
     if(MNL[1] != sizeDenseVector){
         for(int i = 0; i < sizeDenseVector; i++){
@@ -139,37 +197,22 @@ void CSR::spmv(double * denseVector, int sizeDenseVector, double ** result){
     } */
 }
 
-void CSR::spmv(float * denseVector, int sizeDenseVector, double ** result){
-    if(*result != NULL){
-        *result = (double *)realloc(*result, sizeDenseVector * sizeof(double));
-    }else{
-        *result = (double *)malloc(sizeof(double) * sizeDenseVector);
-    }
-    if(MNL[1] != sizeDenseVector){
-        for(int i = 0; i < sizeDenseVector; i++){
-            (*result)[i] = NULL;
-        }
-        cout << "the vector is not of the right size" << endl;
-    }else{
-        for(int i = 0; i < sizeDenseVector; i++){
-            (*result)[i] = 0;
-        }
-        for(long int i = 0; i < MNL[0]; i++){
-            long int start = ptr[i];
-            long int end = ptr[i+1];
-            for(int j = start; j < end; j++){
-                (*result)[i] += ((double)(denseVector[ind[j]])) * val[j]; 
-            }
-        }
-    }
-    
-    /* for(long int i = 0; i < ptr.size(); i++){
-        result[i] += denseVector[ind[i]] * val[i];
-    } */
+int CSRf::getValSize(){
+    return MNL[2];
+}
+long int * CSRf::getPtr(){
+    return ptr;
+}
+long int * CSRf::getInd(){
+    return ind;
 }
 
-double CSR::norm(){
-    double norm = 0;
+float * CSRf::getVal(){
+    return val;
+}
+
+float CSRf::norm(){
+    float norm = 0;
 
     for(long int i = 0; i < MNL[2]; i++){
         norm += val[i];    
@@ -177,21 +220,7 @@ double CSR::norm(){
     return norm;
 }
 
-int CSR::getValSize(){
-    return MNL[2];
-}
-long int * CSR::getPtr(){
-    return ptr;
-}
-long int * CSR::getInd(){
-    return ind;
-}
-
-double * CSR::getVal(){
-    return val;
-}
-
-void CSR::freeData(){
+void CSRf::freeData(){
     if(val != NULL){
         free(val);
         val = NULL;
@@ -205,7 +234,6 @@ void CSR::freeData(){
         ptr = NULL;
     }
 }
-
 
 /* vector<double> CSR::spmv_mpi(vector<double> denseVector){
     int my_rank;
